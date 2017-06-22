@@ -1,0 +1,8 @@
+bokeh==0.12.6
+numpy==1.12.1
+tornado==4.3
+scipy
+scikit-learn
+sklearn
+pandas=0.18.1
+plotly=2.0.10

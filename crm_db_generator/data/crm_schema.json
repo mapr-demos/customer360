@@ -1,0 +1,48 @@
+[
+  {"name":"id", "class":"uuid"},
+  {"name":"name", "class":"name", "type":"first_last"},
+  {"name":"gender", "class":"string", "dist":{"MALE":0.5, "FEMALE":0.5, "OTHER":0.02}},
+  {"name":"address", "class":"address"},
+  {"name":"state", "class":"state"},
+  {
+   "name": "ssn",
+   "class": "ssn",
+   "verbose": false
+  },
+  {
+       "name": "zip",
+       "class": "zip",
+       "seed": 12,
+       "latitudeFuzz": 1,
+       "longitudeFuzz": 1,
+       "onlyContinental": "true"
+  },
+  {
+     "class": "flatten",
+     "value": { "class": "zip", "fields": "latitude, longitude, zip" },
+     "prefix": ""
+  },
+  {"name": "email", "class": "join", "separator": "", "value": {
+          "class":"sequence",
+          "length":3,
+          "array":[
+              { "class": "name", "type": "first"},
+              { "class": "name", "type": "last"},
+              { "class": "string", "dist":{"@example.com":1.0}}
+          ]
+  }},
+  {"name": "phone_number", "class": "join", "separator": "-", "value": {
+          "class":"sequence",
+          "length":3,
+          "array":[
+              { "class": "int", "min": 100, "max": 999},
+              { "class": "int", "min": 100, "max": 999},
+              { "class": "int", "min": 1000, "max": 9999}
+          ]
+  }},
+  {"name":"first_visit", "class":"date", "format":"MM/dd/yyyy", "start":"01/1/1994"},
+  {"name":"birth_date", "class":"date", "format":"MM/dd/yyyy", "start":"01/31/1925", "end":"02/07/2002"},
+  {"name":"sentiment", "class":"string", "dist":{"POSITIVE":35, "NEGATIVE":15, "NEUTRAL":50}},
+  {"name":"churn_risk", "class":"int", "min":1, "max":99, "skew":10},
+  {"name":"persona", "class":"int", "min":1, "max":4}
+]

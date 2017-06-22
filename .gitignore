@@ -1,0 +1,9 @@
+*.iml
+crm_db_generator/data/crm_data.json
+.idea
+__pycache__
+datasets
+jupyter/interactive_widgets/metastore_db
+.ipynb_checkpoints/
+.DS_Store
+target

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="user-scalable=yes, width=627" />
+
+    <title>{{ title if title else "Bokeh Plot" }}</title>
+    {{ bokeh_css }}
+    {{ bokeh_js }}
+    <style>
+      {% include 'style.css' %}
+    </style>
+  </head>
+  <body>
+    {{ plot_div|indent(8) }}
+    {{ plot_script|indent(8) }}
+  </body>
+</html>
