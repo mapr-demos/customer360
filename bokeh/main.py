@@ -9,9 +9,9 @@ from sklearn.datasets import make_classification, make_regression
 from os import listdir
 from os.path import dirname, join, isfile
 from bokeh.layouts import row, widgetbox, column, gridplot, layout
-from bokeh.models import ColumnDataSource, CustomJS, FixedTicker, Div, PreText
+from bokeh.models import ColumnDataSource, CustomJS, FixedTicker, Div, PreText, Range1d, Select
 from bokeh.io import curdoc
-from bokeh.models.widgets import Slider, Button, DataTable, TableColumn, NumberFormatter, AutocompleteInput
+from bokeh.models.widgets import Slider, Button, DataTable, TableColumn, NumberFormatter, TextInput, AutocompleteInput
 import pyodbc
 from bokeh.models import HoverTool
 from datetime import datetime
@@ -66,11 +66,11 @@ def selection_update(new):
 
     machine_learning_table.data={
         'Characteristic': ['Churn Risk','Sentiment','Persona','Upsell','Lifetime Value'],
-        'Prediction': [str(current['churn_risk'].iloc[0]/100)+'%',
+        'Prediction': [str(int(current['churn_risk'].iloc[0]))+'%',
                        current['sentiment'].iloc[0],
-                       'Group 1',
+                       'Group ' + str(np.random.randint(low=1,high=4)),
                        'Auto Loan',
-                       '$524,570']
+                       '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(100 + np.random.randint(low=0, high=899))]
     }
 
     # Generate a new spend rate curve
@@ -126,11 +126,11 @@ def make_default_selection():
 
     machine_learning_table.data={
         'Characteristic': ['Churn Risk','Sentiment','Persona','Upsell','Lifetime Value'],
-        'Prediction': [str(current['churn_risk'].iloc[0]/100)+'%',
+        'Prediction': [str(int(current['churn_risk'].iloc[0]/100)+1)+'%',
                        current['sentiment'].iloc[0],
-                       'Group 1',
+                       'Group ' + str(np.random.randint(low=1,high=4)),
                        'Auto Loan',
-                       '$524,570']
+                       '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(100 + np.random.randint(low=0, high=899))]
     }
     gmapsource.data=dict(
         desc=df.name.head(1000).tolist(),
@@ -158,10 +158,10 @@ def update():
     machine_learning_table.data={
         'Characteristic': ['Upsell','Churn Risk','Sentiment','Persona','Lifetime Value'],
         'Prediction': ['Auto Loan',
-                       str(current['churn_risk'].iloc[0]/100)+'%',
+                       str(int(current['churn_risk'].iloc[0]/100))+'%',
                        current['sentiment'].iloc[0],
-                       'Group 1',
-                       '$524,570']
+                       'Group ' + str(np.random.randint(low=1,high=4)),
+                       '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(100 + np.random.randint(low=0, high=899))]
     }
 
     gmapsource.data=dict(
@@ -193,7 +193,7 @@ columns = [
     #TableColumn(field="salary", title="Income", formatter=NumberFormatter(format="0.000%")),
 ]
 
-customer_directory_table = DataTable(source=source, columns=columns, row_headers=False, editable=True, width=280)
+customer_directory_table = DataTable(source=source, columns=columns, row_headers=False, editable=True, width=280, height=480)
 source.on_change('selected', lambda attr, old, new: selection_update(new))
 source.data = {
     'name'           : df.name,
@@ -209,7 +209,7 @@ churn_table_columns = [
 
 machine_learning_table = ColumnDataSource(data=dict())
 
-ML_table = DataTable(source=machine_learning_table, columns=churn_table_columns, row_headers=False, editable=True, width=280, height=200)
+ML_table = DataTable(source=machine_learning_table, columns=churn_table_columns, row_headers=False, editable=True, width=280, height=160)
 
 ##############################################################################
 # Create heatmap
@@ -377,6 +377,102 @@ line = Line(x='x', y='y', line_color="red", line_width=2, line_alpha=.8)
 plt.add_glyph(lines_source, line)
 
 
+
+###############################################################################
+# continuous animation graph
+#######################################
+from numpy import asarray, cumprod, convolve, exp, ones
+from numpy.random import lognormal, gamma, uniform
+from bokeh.layouts import row, column, gridplot
+from bokeh.plotting import curdoc, figure
+from bokeh.driving import count
+
+BUFSIZE = 200
+MA12, MA26, EMA12, EMA26 = '12-tick Moving Avg', '26-tick Moving Avg', '12-tick EMA', '26-tick EMA'
+
+cont_source = ColumnDataSource(dict(
+    time=[], average=[], low=[], high=[], open=[], close=[],
+    ma=[], macd=[], macd9=[], macdh=[], color=[]
+))
+
+p = figure(plot_height=250, x_axis_type=None, y_axis_location="right")
+
+p.line(x='time', y='average', alpha=0.2, line_width=3, color='navy', source=cont_source)
+p.line(x='time', y='ma', alpha=0.8, line_width=2, color='orange', source=cont_source)
+p.segment(x0='time', y0='low', x1='time', y1='high', line_width=2, color='black', source=cont_source)
+p.segment(x0='time', y0='open', x1='time', y1='close', line_width=8, color='color', source=cont_source)
+
+p2 = figure(plot_height=150, x_range=p.x_range, y_axis_location="left", title='Support Ticket Volume')
+p2.line(x='time', y='macd', line_width=2, source=cont_source)
+p2.x_range.follow = "end"
+p2.x_range.follow_interval = 100
+p2.x_range.range_padding = 0
+
+
+mean = Slider(title="mean", value=0, start=-0.01, end=0.01, step=0.001)
+stddev = Slider(title="stddev", value=0.04, start=0.01, end=0.1, step=0.01)
+mavg = Select(value=MA12, options=[MA12, MA26, EMA12, EMA26])
+
+def _create_prices(t):
+    last_average = 100 if t==0 else cont_source.data['average'][-1]
+    returns = asarray(lognormal(mean.value, stddev.value, 10))
+    average = last_average * cumprod(returns)
+    high = average * exp(abs(gamma(1, 0.03, size=1)))
+    low = average / exp(abs(gamma(1, 0.03, size=1)))
+    delta = high - low
+    open = low + delta * uniform(0.05, 0.95, size=1)
+    close = low + delta * uniform(0.05, 0.95, size=1)
+    return open[0], high[0], low[0], close[0], average[0]
+
+def _moving_avg(prices, days=10):
+    if len(prices) < days: return [100]
+    return convolve(prices[-days:], ones(days, dtype=float), mode="valid") / days
+
+def _ema(prices, days=10):
+    if len(prices) < days or days < 2: return [prices[-1]]
+    a = 2.0 / (days+1)
+    kernel = ones(days, dtype=float)
+    kernel[1:] = 1 - a
+    kernel = a * cumprod(kernel)
+    # The 0.8647 normalizes out that we stop the EMA after a finite number of terms
+    return convolve(prices[-days:], kernel, mode="valid") / (0.8647)
+
+@count()
+def cont_update(t):
+    open, high, low, close, average = _create_prices(t)
+    color = "green" if open < close else "red"
+
+    new_data = dict(
+        time=[t],
+        open=[open],
+        high=[high],
+        low=[low],
+        close=[close],
+        average=[average],
+        color=[color],
+    )
+
+    close = cont_source.data['close'] + [close]
+    ma12 = _moving_avg(close[-12:], 12)[0]
+    ma26 = _moving_avg(close[-26:], 26)[0]
+    ema12 = _ema(close[-12:], 12)[0]
+    ema26 = _ema(close[-26:], 26)[0]
+
+    if   mavg.value == MA12:  new_data['ma'] = [ma12]
+    elif mavg.value == MA26:  new_data['ma'] = [ma26]
+    elif mavg.value == EMA12: new_data['ma'] = [ema12]
+    elif mavg.value == EMA26: new_data['ma'] = [ema26]
+
+    macd = ema12 - ema26
+    new_data['macd'] = [macd]
+
+    macd_series = cont_source.data['macd'] + [macd]
+    macd9 = _ema(macd_series[-26:], 26)[0]
+    new_data['macd9'] = [macd9]
+    new_data['macdh'] = [macd - macd9]
+
+    cont_source.stream(new_data, 300)
+
 ##############################################################################
 # layout the page elements
 ##########################
@@ -406,7 +502,7 @@ has = Div(text='<p>Has:</p><ul>'
 
 title = widgetbox(intro, width=700)
 column1 = widgetbox(customer_directory_title, customer_directory_table, width=300)
-column2 = column(widgetbox(ML_column_title, ML_table, width=300), plt)
+column2 = column(widgetbox(ML_column_title, ML_table, width=300), gridplot([[plt], [p2]], toolbar_location=None, plot_width=300))
 column3 = widgetbox(Persona_column_title, headshot, needs, has, width=300)
 # drill_table_widget = widgetbox(drill_table)
 
@@ -422,5 +518,10 @@ l = layout([headline_row], sizing_mode='fixed')
 l2 = layout([row1, row2, row3, row4], sizing_mode='fixed')
 curdoc().add_root(l)
 curdoc().add_root(l2)
+# curdoc().add_root(gridplot([[p2]], toolbar_location="left", plot_width=500))
+curdoc().add_periodic_callback(cont_update, 100)
+curdoc().title = "MapR Customer 360 Demo"
 
 make_default_selection()
+
+
