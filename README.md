@@ -14,9 +14,9 @@ This demo application focuses on showing how the following three tenants to cust
 
 ## Overview
 
-Our Customer 360 demo application is hosted in a stand alone web server with interactive data visualizations provided by the bokeh Python library.
+There are a lot of different ways to demo MapR. Some people like to use data visualizations and eye candy to convey the value of MapR's technology. Other people like go deep into APIs for more developer oriented conversations. In this demo, we try to accomodate both approaches. For the graphical approach, this demo application runs in a stand-alone web server that shows interactive data visualizations (shown below). For the deep technical dive, we provide Jupyter Notebooks to show code and MapR's APIs.
 
-Jupyter Notebooks are used to demonstrate Customer 360 based machine learning and data integration operations.
+<img src="https://github.com/mapr-demos/customer360/blob/master/images/screenshot.png" width="70%">
 
 
 # Get Community Support!
