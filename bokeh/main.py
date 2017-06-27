@@ -15,6 +15,8 @@ from bokeh.models.widgets import Slider, Button, DataTable, TableColumn, NumberF
 import pyodbc
 from bokeh.models import HoverTool
 from datetime import datetime, timedelta
+import sys
+sys.setrecursionlimit(10000)
 
 logger = logging.getLogger('bokeh')
 logger.setLevel(logging.DEBUG)
@@ -43,6 +45,7 @@ df['headshot'] = headshots
 
 source = ColumnDataSource(data=dict())
 
+pageviews_reset = True
 
 def selection_update(new):
     import random
@@ -117,6 +120,9 @@ def selection_update(new):
         sentiment=current.sentiment.tolist()
     )
     gmapplot.add_glyph(gmapsource, circle)
+
+    global pageviews_reset
+    pageviews_reset = True
 
 def make_default_selection():
     # Processes selections in the customer name directory table
@@ -381,7 +387,7 @@ plt.add_glyph(lines_source, line)
 ###############################################################################
 # continuous animation graph
 #######################################
-from numpy import asarray, cumprod, clip, ones
+from numpy import asarray, cumprod, clip, ones, arange
 from numpy.random import lognormal, rand, choice
 from bokeh.layouts import column, gridplot
 from bokeh.plotting import curdoc, figure
@@ -389,32 +395,58 @@ from bokeh.models import FuncTickFormatter
 from bokeh.driving import count
 from bokeh.models import LinearAxis, Range1d
 
+
+averages = choice([2, 1], size=100, p=[.3, .7])
+times = arange(0,100,1)
+
 cont_source = ColumnDataSource(dict(
     time=[], average=[]
 ))
 
-p = figure(plot_height=150, x_axis_location=None, y_axis_location="left", title='Pageviews')
-p.x_range.follow = "end"
-p.yaxis.ticker = [0.5, 1.0, 1.5, 2.0]
-p.extra_x_ranges = {"foo": Range1d(start=-60, end=0)}
-p.add_layout(LinearAxis(x_range_name="foo"), 'below')
-p.y_range = Range1d(0, 2)
-p.xaxis[0].formatter = PrintfTickFormatter(format="%d sec")
-p.vbar(x='time', width=1, top='average', source=cont_source)
+pageview_plt = figure(plot_height=150, x_axis_location=None, y_axis_location="left", title='Pageviews')
+pageview_plt.x_range.follow = "end"
+pageview_plt.yaxis.ticker = [0.5, 1.0, 1.5, 2.0]
+pageview_plt.extra_x_ranges = {"foo": Range1d(start=-60, end=0)}
+pageview_plt.add_layout(LinearAxis(x_range_name="foo"), 'below')
+pageview_plt.y_range = Range1d(0, 2, bounds='auto')
+pageview_plt.xaxis[0].formatter = PrintfTickFormatter(format="%d sec")
+pageview_plt.vbar(x='time', width=10, top='average', source=cont_source)
+pageview_plt.xaxis.major_label_orientation = pi / 4
+pageview_plt.xgrid.grid_line_color = None
+pageview_plt.ygrid.grid_line_color = None
 
-def _create_datapoints(t):
-    average = choice([2, 1, -1], size=1, p=[.01, .03, .96])
+def _create_datapoints():
+    average = choice([2, 1, -1], size=1, p=[.001, .003, .996])
     return average[0]
 
+reset_t = -1
 @count()
 def cont_update(t):
-    average = _create_datapoints(t)
+    # initialize or reset the pageviews graph
+    global reset_t, pageviews_reset
+    # if reset is true, write a bunch of new values to the graph
+    if pageviews_reset == True:
+        if reset_t < t:
+            reset_t = t+1800
+        if reset_t == t:
+            pageviews_reset = False
+        average = 0 if t < (reset_t-400) else _create_datapoints()
+        new_data = dict(
+            time=[t],
+            average=[average]
+        )
+        cont_source.stream(new_data, 600)
+        cont_update(t)
 
-    new_data = dict(
-        time=[t],
-        average=[average],
-    )
-    cont_source.stream(new_data, 1000)
+    # update the pageviews graph
+    # average = 1 if t == 600 else _create_datapoints(t)
+    else:
+        average = _create_datapoints()
+        new_data = dict(
+            time=[t],
+            average=[average]
+        )
+        cont_source.stream(new_data, 600)
 
 ##############################################################################
 # layout the page elements
@@ -445,7 +477,7 @@ has = Div(text='<p>Has:</p><ul>'
 
 title = widgetbox(intro, width=700)
 column1 = widgetbox(customer_directory_title, customer_directory_table, width=300)
-column2 = column(widgetbox(ML_column_title, ML_table, width=300), gridplot([[plt], [p]], toolbar_location=None, plot_width=300))
+column2 = column(widgetbox(ML_column_title, ML_table, width=300), gridplot([[plt], [pageview_plt]], toolbar_location=None, plot_width=300))
 column3 = widgetbox(Persona_column_title, headshot, needs, has, width=300)
 # drill_table_widget = widgetbox(drill_table)
 
