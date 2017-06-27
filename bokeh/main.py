@@ -393,7 +393,6 @@ cont_source = ColumnDataSource(dict(
     time=[], average=[]
 ))
 
-# p = figure(plot_height=150, y_axis_location="left", title='Predictive Accuracy')
 p = figure(plot_height=150, x_axis_location=None, y_axis_location="left", title='Pageviews')
 p.x_range.follow = "end"
 p.yaxis.ticker = [0.5, 1.0, 1.5, 2.0]
@@ -404,11 +403,7 @@ p.xaxis[0].formatter = PrintfTickFormatter(format="%d sec")
 p.vbar(x='time', width=1, top='average', source=cont_source)
 
 def _create_datapoints(t):
-    last_average = 50 if t==0 else cont_source.data['average'][-1]
-    returns = asarray(lognormal(0, .04, 10))
-    # average = (rand(10) < 0.1).astype(int)
     average = choice([2, 1, -1], size=1, p=[.01, .03, .96])
-    average = clip(average, 0.01, 99.99)
     return average[0]
 
 @count()
@@ -419,7 +414,7 @@ def cont_update(t):
         time=[t],
         average=[average],
     )
-    cont_source.stream(new_data, 100)
+    cont_source.stream(new_data, 1000)
 
 ##############################################################################
 # layout the page elements
