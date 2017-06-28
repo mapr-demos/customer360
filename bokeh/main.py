@@ -11,10 +11,11 @@ from os.path import dirname, join, isfile
 from bokeh.layouts import row, widgetbox, column, gridplot, layout
 from bokeh.models import ColumnDataSource, CustomJS, FixedTicker, Div, PreText, Range1d, Select
 from bokeh.io import curdoc
-from bokeh.models.widgets import Slider, Button, DataTable, TableColumn, NumberFormatter, TextInput, AutocompleteInput
+from bokeh.models.widgets import Slider, Button, DataTable, TableColumn, StringFormatter, NumberFormatter, TextInput, AutocompleteInput
 import pyodbc
 from bokeh.models import HoverTool
 from datetime import datetime, timedelta
+import math
 import sys
 sys.setrecursionlimit(10000)
 
@@ -28,22 +29,26 @@ conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le', to=str)
 cursor = conn.cursor()
 
 sql="SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` limit 10000 "
-df=pd.read_sql(sql, conn)
+customer_directory_df=pd.read_sql(sql, conn)
 
+# Add headshot to each row of customer_directory_df
 # Load face image files for each customer
 headshots_path="/home/mapr/customer360/bokeh/static/face_images/"
 headshots = [f for f in listdir(headshots_path) if isfile(join(headshots_path, f))]
 # We have a dataset of face images, but we may not have enough face images for every customer
 # So we'll just use the same images for some customers.
-if len(headshots) > len(df):
-    headshots = headshots[:len(df)]
-while len(df) > len(headshots):
-    headshots.extend(headshots[:(len(df) - len(headshots))])
-df['headshot'] = headshots
+if len(headshots) > len(customer_directory_df):
+    headshots = headshots[:len(customer_directory_df)]
+while len(customer_directory_df) > len(headshots):
+    headshots.extend(headshots[:(len(customer_directory_df) - len(headshots))])
+customer_directory_df['headshot'] = headshots
 # print(df['headshot'][0])
 # print(df['headshot'][len(df)-1])
 
-source = ColumnDataSource(data=dict())
+# Add tenure to each row of customer_directory_df
+customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(lambda x: (datetime.today() - datetime.strptime(x, '%m/%d/%Y')).days)
+
+customer_directory_source = ColumnDataSource(data=dict())
 
 pageviews_reset = True
 
@@ -54,8 +59,8 @@ def selection_update(new):
     logger.debug(new.keys)
     logger.debug(new['1d'])
     inds = np.array(new['1d'][u'indices'])
-    selected_names = source.data['name'][inds]
-    current = df[df['name'].isin(selected_names)]
+    selected_names = customer_directory_source.data['name'][inds]
+    current = customer_directory_df[customer_directory_df['name'].isin(selected_names)]
     image_file = "bokeh/static/face_images/"+str(current.iloc[0].headshot)
 
     logger.debug("Selected Names:")
@@ -126,7 +131,7 @@ def selection_update(new):
 
 def make_default_selection():
     # Processes selections in the customer name directory table
-    current = df[df['name'] == ('Erika Gallardo')]
+    current = customer_directory_df[customer_directory_df['name'] == ('Erika Gallardo')]
     image_file = "bokeh/static/face_images/"+str(current.iloc[0].headshot)
     headshot.text = str('<img src=') + image_file + str(' alt="face" width="150">')
 
@@ -139,72 +144,29 @@ def make_default_selection():
                        '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(100 + np.random.randint(low=0, high=899))]
     }
     gmapsource.data=dict(
-        desc=df.name.head(1000).tolist(),
-        lat=df.latitude.head(1000).tolist(),
-        lon=df.longitude.head(1000).tolist(),
-        tenure=df.glyphsize.head(1000).tolist(),
-        size=df.glyphsize.head(1000).tolist(),
-        color=df.glyphcolor.head(1000).tolist(),
-        sentiment=df.sentiment.head(1000).tolist()
+        desc=customer_directory_df.name.head(1000).tolist(),
+        lat=customer_directory_df.latitude.head(1000).tolist(),
+        lon=customer_directory_df.longitude.head(1000).tolist(),
+        tenure=customer_directory_df.glyphsize.head(1000).tolist(),
+        size=customer_directory_df.glyphsize.head(1000).tolist(),
+        color=customer_directory_df.glyphcolor.head(1000).tolist(),
+        sentiment=customer_directory_df.sentiment.head(1000).tolist()
     )
     gmapplot.add_glyph(gmapsource, circle)
-
-def update():
-    # Process changes to the slider
-    # logger.debug("Slider value:")
-    # logger.debug(slider.value)
-    current = df[(df['name'].str.contains(autocomplete.value))].head(slider.value)
-
-    source.data = {
-        'name'           : current.name,
-        'phone_number'   : current.phone_number,
-        'address '       : current.address
-    }
-
-    machine_learning_table.data={
-        'Characteristic': ['Upsell','Churn Risk','Sentiment','Persona','Lifetime Value'],
-        'Prediction': ['Auto Loan',
-                       str(int(current['churn_risk'].iloc[0]/100))+'%',
-                       current['sentiment'].iloc[0],
-                       'Group ' + str(np.random.randint(low=1,high=4)),
-                       '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(100 + np.random.randint(low=0, high=899))]
-    }
-
-    gmapsource.data=dict(
-        desc=current.name.tolist(),
-        lat=current.latitude.tolist(),
-        lon=current.longitude.tolist(),
-        tenure=current.glyphsize.tolist(),
-        size=[10] * current.size,
-        color=current.glyphcolor.tolist(),
-        sentiment=current.sentiment.tolist()
-    )
-    gmapplot.add_glyph(gmapsource, circle)
-
-
-slider = Slider(title="Filter by Top Names", start=1, end=5000, value=1000, step=100)
-slider.on_change('value', lambda attr, old, new: update())
-
-autocomplete = AutocompleteInput(title="Filter by Name", completions=df['name'].tolist())
-autocomplete.on_change('value', lambda attr, old, new: update())
-
-button = Button(label="Download", button_type="success")
-button.callback = CustomJS(args=dict(source=source),
-                           code=open(join(dirname(__file__), "download.js")).read())
 
 columns = [
     TableColumn(field="name", title="Name"),
-    TableColumn(field="phone_number", title="Phone")
-    #TableColumn(field="address", title="Address")
+    TableColumn(field="phone_number", title="Phone"),
+    TableColumn(field="tenure", title="Tenure", width=90, formatter=StringFormatter())
     #TableColumn(field="salary", title="Income", formatter=NumberFormatter(format="0.000%")),
 ]
 
-customer_directory_table = DataTable(source=source, columns=columns, row_headers=False, editable=True, width=280, height=480)
-source.on_change('selected', lambda attr, old, new: selection_update(new))
-source.data = {
-    'name'           : df.name,
-    'phone_number'   : df.phone_number,
-    'address '       : df.address
+customer_directory_table = DataTable(source=customer_directory_source, columns=columns, row_headers=False, editable=True, width=280, height=480)
+customer_directory_source.on_change('selected', lambda attr, old, new: selection_update(new))
+customer_directory_source.data = {
+    'name'           : customer_directory_df.name,
+    'phone_number'   : customer_directory_df.phone_number,
+    'tenure'   : ((customer_directory_df.tenure/365).astype(int)).astype(str)+'yr'
 }
 
 churn_table_columns = [
@@ -222,7 +184,7 @@ ML_table = DataTable(source=machine_learning_table, columns=churn_table_columns,
 ##########################
 
 from heatmap import create_heatmap
-hm = create_heatmap(df)
+hm = create_heatmap(customer_directory_df)
 
 
 ##############################################################################
@@ -250,25 +212,23 @@ gmapplot = GMapPlot(
 
 gmapplot.title.text = "Customer Location, Tenure, and Sentiment"
 
-#current['first_visit'] = current['first_visit'].apply(lambda x: 50000)
 #size=(datetime.today() - datetime.strptime('01/13/1999', '%m/%d/%Y')).days
-df['tenure'] = df['first_visit'].apply(lambda x: (datetime.today() - datetime.strptime(x, '%m/%d/%Y')).days)
-max = df['tenure'].loc[df['tenure'].idxmax()]
-df['glyphsize'] = df['tenure'].apply(lambda x: (10 * x/max))
-df['glyphcolor'] = pd.Series(df.sentiment, dtype="category")
-df['glyphcolor'] = df['glyphcolor'].cat.rename_categories(['red','grey','blue'])
+max = customer_directory_df['tenure'].loc[customer_directory_df['tenure'].idxmax()]
+customer_directory_df['glyphsize'] = customer_directory_df['tenure'].apply(lambda x: (10 * x / max))
+customer_directory_df['glyphcolor'] = pd.Series(customer_directory_df.sentiment, dtype="category")
+customer_directory_df['glyphcolor'] = customer_directory_df['glyphcolor'].cat.rename_categories(['red', 'grey', 'blue'])
 
 # Data to be visualized (equal length arrays)
 gmapsource = ColumnDataSource(
     data=dict(
-        desc=df.name.tolist(),
-        lat=df.latitude.tolist(),
-        lon=df.longitude.tolist(),
-        size=df.glyphsize.tolist(),
-        tenure=df.glyphsize.tolist(),
+        desc=customer_directory_df.name.tolist(),
+        lat=customer_directory_df.latitude.tolist(),
+        lon=customer_directory_df.longitude.tolist(),
+        size=customer_directory_df.glyphsize.tolist(),
+        tenure=customer_directory_df.glyphsize.tolist(),
         # size=housing.median_income.tolist(),
-        color=df.glyphcolor.tolist(),
-        sentiment=df.sentiment.tolist()
+        color=customer_directory_df.glyphcolor.tolist(),
+        sentiment=customer_directory_df.sentiment.tolist()
     )
 )
 
@@ -290,39 +250,39 @@ gmaphover = HoverTool(
 gmapplot.add_tools(gmaphover)
 
 
-##############################################################################
-# Drill queries
-# NOTE!  This won't work with anaconda panda. It throws a symbol error.
-##############################
-
-# Initialize the connection
-# The DSN was defined with the iODBC Administrator app for Mac.
-conn = pyodbc.connect("DSN=drill64", autocommit=True)
-conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le')
-cursor = conn.cursor()
-
-# Setup a SQL query to select data from a csv file.
-# The csv2 filename extension tells Drill to extract
-# column names from the first row.
-# sql = "SELECT * FROM `dfs.tmp`.`./companylist.csv2` limit 3"
-# Execute the SQL query
-# print(pandas.read_sql(sql, conn))
-# Here's how to select data from MySQL
-# s = "select * from ianmysql.mysql.`user`"
-# pandas.read_sql(s, conn)
-
-# Here's an example of a SQL JOIN the combines a JSON file with a MySQL table.
-sql = "SELECT tbl1.name, tbl2.address FROM `dfs.tmp`.`./names.json` as tbl1 \
-     JOIN `dfs.tmp`.`./addressunitedstates.json` as tbl2 ON tbl1.id=tbl2.id"
-
-
-drill_data = ColumnDataSource(data=pd.read_sql(sql, conn))
-drill_columns = [
-    TableColumn(field="name", title="Name"),
-    TableColumn(field="phone_number", title="Phone"),
-    TableColumn(field="first_visit", title="Tenure")
-]
-drill_table = DataTable(source=drill_data, columns=drill_columns, row_headers=False, width=600)
+# ##############################################################################
+# # Drill queries
+# # NOTE!  This won't work with anaconda panda. It throws a symbol error.
+# ##############################
+#
+# # Initialize the connection
+# # The DSN was defined with the iODBC Administrator app for Mac.
+# conn = pyodbc.connect("DSN=drill64", autocommit=True)
+# conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le')
+# cursor = conn.cursor()
+#
+# # Setup a SQL query to select data from a csv file.
+# # The csv2 filename extension tells Drill to extract
+# # column names from the first row.
+# # sql = "SELECT * FROM `dfs.tmp`.`./companylist.csv2` limit 3"
+# # Execute the SQL query
+# # print(pandas.read_sql(sql, conn))
+# # Here's how to select data from MySQL
+# # s = "select * from ianmysql.mysql.`user`"
+# # pandas.read_sql(s, conn)
+#
+# # Here's an example of a SQL JOIN the combines a JSON file with a MySQL table.
+# sql = "SELECT tbl1.name, tbl2.address FROM `dfs.tmp`.`./names.json` as tbl1 \
+#      JOIN `dfs.tmp`.`./addressunitedstates.json` as tbl2 ON tbl1.id=tbl2.id"
+#
+#
+# drill_data = ColumnDataSource(data=pd.read_sql(sql, conn))
+# drill_columns = [
+#     TableColumn(field="name", title="Name"),
+#     TableColumn(field="phone_number", title="Phone"),
+#     TableColumn(field="first_visit", title="Tenure")
+# ]
+# drill_table = DataTable(source=drill_data, columns=drill_columns, row_headers=False, width=600)
 
 ##############################################################################
 # Linear regression plot
@@ -403,8 +363,9 @@ cont_source = ColumnDataSource(dict(
     time=[], average=[]
 ))
 
-pageview_plt = figure(plot_height=150, x_axis_location=None, y_axis_location="left", title='Pageviews')
+pageview_plt = figure(plot_height=150, x_axis_location=None, y_axis_location="left", title='Click Stream')
 pageview_plt.x_range.follow = "end"
+pageview_plt.yaxis.axis_label = "Pageviews"
 pageview_plt.yaxis.ticker = [0.5, 1.0, 1.5, 2.0]
 pageview_plt.extra_x_ranges = {"foo": Range1d(start=-60, end=0)}
 pageview_plt.add_layout(LinearAxis(x_range_name="foo"), 'below')
@@ -416,7 +377,7 @@ pageview_plt.xgrid.grid_line_color = None
 pageview_plt.ygrid.grid_line_color = None
 
 def _create_datapoints():
-    average = choice([2, 1, -1], size=1, p=[.001, .003, .996])
+    average = choice([2, 1, -1], size=1, p=[.002, .008, .990])
     return average[0]
 
 reset_t = -1
