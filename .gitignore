@@ -1,3 +1,5 @@
+metastore_db/
+derby.log
 *.iml
 crm_db_generator/data/crm_data.json
 .idea
