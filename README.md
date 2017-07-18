@@ -41,7 +41,7 @@ Cloud Scale Storage, Data Integration, and Machine Learning are essential to ach
 
 ## What's happening behind the scenes?
 
-- **Customer Directory** is populated by a SQL query which access data in MapR-DB, MySQL, and JSON files via Apache Drill.
+- **Customer Directory** is populated by a SQL query which accesses data in MapR-DB, MySQL, and JSON files. Thanks to Apache Drill, these SQL queries can be executed without specifying a schema.
 - **Machine Learning** is used to predict spend rate and lifetime value by linear regressions. It's also used to create the Heatmap that identifies upsell/cross-sell opportunities for customer groups segemented by K-Means.
 - **Real-Time Streaming** is used to show clickstreams for each user. This data helps customer service reps know how customers are using the Banking web site during support calls. Clickstream data is also useful for tracking customer journey.
 - **Survey Feedback** is derived from surveys in which only a fraction of customers responded, but which we can extrapolate to identify patterns with other customer groups.
