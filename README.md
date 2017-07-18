@@ -35,7 +35,7 @@ Company's have all kinds of information about their customers. That information 
 
 But we don't want to just store data, we want to be able to access all this information in order to understand what our customers are all about. So **Data Integration** is also a critical part for Customer 360. MapR does data integration with Apache Drill - the industry's best SQL engine for Hadoop.
 
-But its not enough to simply consolidate datasets. We want to do more than just SQL. We want to harness the power of **Machine Learning** to not only better understand customer characteristics like sentiment, propensity to buy, and likelihood to churn, but also to improve fraud detection and offer targeting.
+But its not enough to simply consolidate datasets. We want to do more than just SQL. We want to harness the power of **Machine Learning** to not only better understand customer characteristics like sentiment, propensity to buy, and likelihood to churn but also to improve fraud detection and targeted marketing.
 
 Cloud Scale Storage, Data Integration, and Machine Learning are essential to achieving the most value out of a Customer 360 application.  Any one of those would be a challenge by itself, but with the MapR Converged Data Platform you get them all in a package that is faster/better/cheaper than anything else.
 
