@@ -39,7 +39,7 @@ But its not enough to simply consolidate datasets. We want to do more than just 
 
 Cloud Scale Storage, Data Integration, and Machine Learning are essential to achieving the most value out of a Customer 360 application.  Any one of those would be a challenge by itself, but with the MapR Converged Data Platform you get them all in a package that is faster/better/cheaper than anything else.
 
-## What's happening behind the scenes?
+## What's behind the scenes?
 
 - **Customer Directory** is populated by a SQL query which accesses data in MapR-DB, MySQL, and JSON files. Thanks to Apache Drill, these SQL queries can be executed without specifying a schema.
 - **Machine Learning** is used to predict spend rate and lifetime value by linear regressions. It's also used to create the Heatmap that identifies upsell/cross-sell opportunities for customer groups segemented by K-Means.
