@@ -14,9 +14,21 @@ This demo application focuses on showing how the following three tenants to cust
 
 ## Overview
 
-There are a lot of different ways to demo MapR. Some people like to use data visualizations and eye candy to convey the value of MapR's technology. Other people like go deep into APIs for more developer oriented conversations. In this demo, we try to accomodate both approaches. For the graphical approach, this demo application runs in a stand-alone web server that shows interactive data visualizations (shown below). For the deep technical dive, we provide Jupyter Notebooks to show code and MapR's APIs.
+There are a lot of different ways to demo MapR. Some people like to use data visualizations to convey the value of MapR's technology. Other people like go deep into APIs for more developer oriented conversations. In this demo, we try to accomodate both approaches. For the graphical approach, this demo application runs in a stand-alone web server that shows interactive data visualizations (shown below). For the deep technical dive, we provide Jupyter Notebooks to show code and MapR's APIs.
 
 <img src="https://github.com/mapr-demos/customer360/blob/master/images/screenshot.png" width="70%">
+
+
+# DEMO SCRIPT
+
+Company's have all kinds of information about their customers. That information is stored in many different formats and in many different ways. It may be schemaless or schemaful. It may be in database tables, it may be in files, or it may be in social media.And it might be massive or unbounded in a never-ending stream. In all these cases, MapR provides the platform you need to store data in files, tables, and streams. So, that's the start. **Cloud Scale data storage** is the first thing you need for a Customer 360. 
+
+But we don't want to just store data, we want to be able to access all this information in order to understand what our customers are all about. So **Data Integration** is probably the most important part of Customer 360. MapR does data integration with a powerful schema-free SQL engine for Hadoop, called Apache Drill.
+
+But its not enough to simply consolidate datasets. We want to do more than just SQL. We want to harness the power of **Machine Learning** to not only better understand customer characteristics like sentiment, propensity to buy, and likelihood to churn, but also to improve fraud detection and offer targeting.
+
+Cloud Scale Storage, Data Integration, and Machine Learning are essential to achieving the most value out of a Customer 360 application.  Any one of those would be a challenge by itself, but with the MapR Converged Data Platform you get them all in a package that is faster/better/cheaper than anything else.
+
 
 
 # Get Community Support!

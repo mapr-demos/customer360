@@ -4,5 +4,5 @@ tornado==4.3
 scipy
 scikit-learn
 sklearn
-pandas=0.18.1
-plotly=2.0.10
+pandas==0.18.1
+plotly==2.0.10

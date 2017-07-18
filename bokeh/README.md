@@ -6,7 +6,9 @@ We are using Ian's Intel NUC devices to run this bokeh app.
 
 # Preconditions
 
-- The drill64 DSN must be defined on the bokeh host
+- git must be installed. `sudo apt-get install git -y`
+- virtualenv must be installed. `sudo apt-get install python-virtualenv -y`.
+- The drill64 DSN must be defined on the bokeh host. [Click here](https://drill.apache.org/docs/configuring-odbc-on-linux/#step-2:-define-the-odbc-data-sources-in-.odbc.ini) to see how to set that up.
 - Data must have already been copied to /mapr/my.cluster.com/dialogue_corpus
 - Data must have already been copied to /mapr/my.cluster.com/face_images
 
@@ -20,8 +22,14 @@ Copy the provided datasets/crm_data.json file to the cluster and create the CRM 
 # Start Bokeh
 
     ssh nodea
-    # enter the isolated python virtualenv
-    source ~/tmp/my_project/bin/activate 
+    # create an isolated environment
+    virtualenv env
+    # enter the isolated environemnt
+    source ~/env/bin/activate 
+    # install prerequites for scipy (without these, you'll get an error on `pip install scipy`
+    sudo apt-get install libblas-dev liblapack-dev libatlas-base-dev gfortran
+    # install requirements (this may not work, if it doesn't just install each one individually)
+    sudo pip install -r requirements.txt
     # make sure you have internet access so we can download datasets
     ping www.google.com
     # run bokeh
