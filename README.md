@@ -29,7 +29,7 @@ You're a customer support representative. You're about to answer a call from Eri
 - Is she already navigating the web site? 
 - What should you keep in mind to upsell? 
 
-## How does "convergence" make this application possible?
+## How does "convergence" make Customer Intelligence better?
 
 Company's have all kinds of information about their customers. That information is stored in many different formats and in many different ways. It may be schemaless or schemaful. It may be in database tables, it may be in files, or it may be in social media. And it might be massive or unbounded in a never-ending stream. In all these cases, MapR provides the platform you need to store data in files, tables, and streams. **Cloud Scale data storage** is the first thing you need for a Customer 360. 
 
