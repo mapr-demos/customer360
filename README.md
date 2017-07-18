@@ -23,11 +23,11 @@ There are a lot of different ways to demo MapR. Some people like to use data vis
 
 ## Setting the Scene
 
-You're a customer support representative. You're about to answer a call from Erika Gallardo. Before you even talk to her, try to answer these questions: 
+You're a customer support representative. You're about to answer a call from Erika Gallardo. Before you talk to her try to answer these questions: 
 
 - What do you think she'll be asking about?
 - Is she already navigating the web site? 
-- What should you attempt to upsell? 
+- What should you keep in mind to upsell? 
 
 ## How does "convergence" make this application possible?
 
