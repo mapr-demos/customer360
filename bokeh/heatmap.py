@@ -59,15 +59,7 @@ def create_heatmap(df):
         score=score
     )
 
-    hover = HoverTool(
-        tooltips=[
-            ("Persona", "@persona"),
-            ("Product", "$x"),
-            ("Score", "@score"),
-        ]
-    )
-    hm = HeatMap(data, x='product', y='persona',values='score', title='Customer Profiles', xlabel='Product',
-                 ylabel='Persona', legend=False, stat=None,  tools=[hover,"save"], height=400, width=900, toolbar_location=None)
+    hm = HeatMap(data, x='product', y='persona', values='score', title='Customer Profiles', xlabel='Product', ylabel='Persona', legend=False, stat=None,  tools=["save"], height=400, width=900, toolbar_location=None)
     hm.yaxis.ticker=FixedTicker(ticks=[0,1,2,3])
     hm_source = ColumnDataSource(data=sums)
 
