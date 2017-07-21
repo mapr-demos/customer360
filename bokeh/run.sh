@@ -1,2 +1,2 @@
 #!/bin/bash
-~/anaconda3/bin/bokeh serve . --show
+~/customer360/bin/bokeh serve . --allow-websocket-origin '*'
