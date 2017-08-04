@@ -23,13 +23,53 @@ logger = logging.getLogger('bokeh')
 logger.setLevel(logging.DEBUG)
 
 conn = pyodbc.connect("DSN=drill64", autocommit=True)
-conn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-32le', to=str)
-conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le', to=str)
+# Don't specify unicode encoding with MapR 6.0.
+# conn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-32le', to=str)
+# conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le', to=str)
 
 cursor = conn.cursor()
 
 sql="SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` limit 10000 "
 customer_directory_df=pd.read_sql(sql, conn)
+
+text_input = TextInput(title="Name Contains:")
+sort_options = ['name', 'phone_number', 'first_visit']
+sortby = Select(title="Sort by",
+                options=sort_options)
+controls = [text_input, sortby]
+for control in controls:
+    control.on_change('value', lambda attr, old, new: update())
+
+def update():
+    sql="SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 1000"
+    logger.debug(text_input.value.strip())
+    global customer_directory_df, headshots, customer_directory_source
+    customer_directory_df = pd.read_sql(sql, conn)
+    logger.debug(customer_directory_df.size)
+    # Add headshot to each row of customer_directory_df
+    # Load face image files for each customer
+    headshots_path="/home/mapr/customer360/bokeh/static/face_images/"
+    headshots = [f for f in listdir(headshots_path) if isfile(join(headshots_path, f))]
+    # We have a dataset of face images, but we may not have enough face images for every customer
+    # So we'll just use the same images for some customers.
+    if len(headshots) > len(customer_directory_df):
+        headshots = headshots[:len(customer_directory_df)]
+    while len(customer_directory_df) > len(headshots):
+        headshots.extend(headshots[:(len(customer_directory_df) - len(headshots))])
+    customer_directory_df['headshot'] = headshots
+    # print(df['headshot'][0])
+    # print(df['headshot'][len(df)-1])
+
+    # Add tenure to each row of customer_directory_df
+    customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(lambda x: (datetime.today() - datetime.strptime(x, '%m/%d/%Y')).days)
+
+    customer_directory_source.data = {
+        'name'           : customer_directory_df.name,
+        'phone_number'   : customer_directory_df.phone_number,
+        'tenure'   : ((customer_directory_df.tenure/365).astype(int)).astype(str)+'yr'
+    }
+
+
 
 # Add headshot to each row of customer_directory_df
 # Load face image files for each customer
@@ -62,7 +102,6 @@ def selection_update(new):
     selected_names = customer_directory_source.data['name'][inds]
     current = customer_directory_df[customer_directory_df['name'].isin(selected_names)]
     image_file = "bokeh/static/face_images/"+str(current.iloc[0].headshot)
-
     logger.debug("Selected Names:")
     logger.debug(selected_names)
     logger.debug("Cumulative Churn Risk:")
@@ -131,7 +170,7 @@ def selection_update(new):
 
 def make_default_selection():
     # Processes selections in the customer name directory table
-    current = customer_directory_df[customer_directory_df['name'] == ('Erika Gallardo')]
+    current = customer_directory_df[customer_directory_df['name'] == ('Eva Peterson')]
     image_file = "bokeh/static/face_images/"+str(current.iloc[0].headshot)
     headshot.text = str('<img src=') + image_file + str(' alt="face" width="150">')
 
@@ -425,7 +464,7 @@ customer_directory_title = Div(text="""<h3>Customer Directory:</h3>""")
 ML_column_title = Div(text="""<h3>Machine Learning:</h3>""")
 Persona_column_title = Div(text="""<h3>Survey Feedback:</h3>""")
 
-headshot = Div(text='<img src="bokeh/static/face_images/10b.jpg" alt="face" width="150">')
+headshot = Div(text='<img src="bokeh/static/face_images/84b.jpg" alt="face" width="150">')
 needs = Div(text='<p>Needs:</p><ul>'
                  '<li>Home, car, and property insurance</li>'
                  '<li>To save for retirement</li>'
@@ -437,7 +476,7 @@ has = Div(text='<p>Has:</p><ul>'
                '<li>Roth IRA</li></ul>')
 
 title = widgetbox(intro, width=700)
-column1 = widgetbox(customer_directory_title, customer_directory_table, width=300)
+column1 = widgetbox(customer_directory_title, text_input, sortby, customer_directory_table, width=300)
 column2 = column(widgetbox(ML_column_title, ML_table, width=300), gridplot([[plt], [pageview_plt]], toolbar_location=None, plot_width=300))
 column3 = widgetbox(Persona_column_title, headshot, needs, has, width=300)
 # drill_table_widget = widgetbox(drill_table)
