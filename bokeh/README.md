@@ -9,6 +9,13 @@ We are using Ian's Intel NUC devices to run this bokeh app.
 - git must be installed. `sudo apt-get install git -y`
 - virtualenv must be installed. `sudo apt-get install python-virtualenv -y`.
 - The drill64 DSN must be defined on the bokeh host. [Click here](https://drill.apache.org/docs/configuring-odbc-on-linux/#step-2:-define-the-odbc-data-sources-in-.odbc.ini) to see how to set that up.
+- anaconda and bokeh must have been installed. For example, like this:
+
+    wget https://repo.continuum.io/archive/Anaconda3-4.4.0-Linux-x86_64.sh
+    bash Anaconda3-4.4.0-Linux-x86_64.sh
+    . ~/.basrc
+    conda install bokeh
+- you must have installed an ODBC driver and defined data source connectors for Drill. Here's some guidance on going that: [http://www.bigendiandata.com/2017-05-01-Apache_Drill/](http://www.bigendiandata.com/2017-05-01-Apache_Drill/).
 - Data must have already been copied to /mapr/my.cluster.com/dialogue_corpus
 - Data must have already been copied to /mapr/my.cluster.com/face_images
 
