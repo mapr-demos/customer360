@@ -104,7 +104,6 @@ pageviews_reset = True
 
 
 def selection_update(new):
-    import random
     # Processes selections in the customer name directory table
     logger.debug(new)
     logger.debug(new.keys)
@@ -112,6 +111,8 @@ def selection_update(new):
     inds = np.array(new['1d'][u'indices'])
     selected_names = customer_directory_source.data['name'][inds]
     current = customer_directory_df[customer_directory_df['name'].isin(selected_names)]
+    selected_name.text = '<p><strong>Name:</strong> ' + str(current['name'].iloc[0]) + '</p>'
+
     image_file = "bokeh/static/face_images/" + str(current.iloc[0].headshot)
     logger.debug("Selected Names:")
     logger.debug(selected_names)
@@ -133,6 +134,7 @@ def selection_update(new):
     }
 
     # Generate a new spend rate curve
+    import random
     purchases = txndf[txndf['Amount'] < 0]
     purchases = purchases.iloc[::-1]
     purchases['Day'] = purchases['Date'].apply(
@@ -490,9 +492,10 @@ headliner = Div(text="""<div class="content">
 intro = Div(text="""<div class="content"><hr><h1>Customer Intelligence Portal for ACME Bank </h1></div>""")
 customer_directory_title = Div(text="""<h3>Customer Directory:</h3>""")
 ML_column_title = Div(text="""<h3>Machine Learning:</h3>""")
-Persona_column_title = Div(text="""<h3>Survey Feedback:</h3>""")
+Persona_column_title = Div(text="""<h3>Selected Customer:</h3>""")
 
 headshot = Div(text='<img src="bokeh/static/face_images/84b.jpg" alt="face" width="150">')
+selected_name = Div(text='<p><strong>Name:</strong> Eva</p>')
 needs = Div(text='<p>Needs:</p><ul>'
                  '<li>Home, car, and property insurance</li>'
                  '<li>To save for retirement</li>'
@@ -508,7 +511,7 @@ title = widgetbox(intro, width=700)
 column1 = widgetbox(customer_directory_title, text_input, sortby, newline, customer_directory_table, width=300)
 column2 = column(widgetbox(ML_column_title, ML_table, width=300),
                  gridplot([[plt], [pageview_plt]], toolbar_location=None, plot_width=300))
-column3 = widgetbox(Persona_column_title, headshot, needs, has, width=300)
+column3 = widgetbox(Persona_column_title, headshot, selected_name, needs, has, width=300)
 # drill_table_widget = widgetbox(drill_table)
 
 curdoc().title = "Customer 360 Analytics"
