@@ -495,7 +495,7 @@ ML_column_title = Div(text="""<h3>Machine Learning:</h3>""")
 Persona_column_title = Div(text="""<h3>Selected Customer:</h3>""")
 
 headshot = Div(text='<img src="bokeh/static/face_images/84b.jpg" alt="face" width="150">')
-selected_name = Div(text='<p><strong>Name:</strong> Eva</p>')
+selected_name = Div(text='<p><strong>Name:</strong> Eva Peterson</p>')
 needs = Div(text='<p>Needs:</p><ul>'
                  '<li>Home, car, and property insurance</li>'
                  '<li>To save for retirement</li>'
