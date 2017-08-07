@@ -11,12 +11,14 @@ from os.path import dirname, join, isfile
 from bokeh.layouts import row, widgetbox, column, gridplot, layout
 from bokeh.models import ColumnDataSource, CustomJS, FixedTicker, Div, PreText, Range1d, Select
 from bokeh.io import curdoc
-from bokeh.models.widgets import Slider, Button, DataTable, TableColumn, StringFormatter, NumberFormatter, TextInput, AutocompleteInput
+from bokeh.models.widgets import Slider, Button, DataTable, TableColumn, StringFormatter, NumberFormatter, TextInput, \
+    AutocompleteInput
 import pyodbc
 from bokeh.models import HoverTool
 from datetime import datetime, timedelta
 import math
 import sys
+
 sys.setrecursionlimit(10000)
 
 logger = logging.getLogger('bokeh')
@@ -29,26 +31,32 @@ conn = pyodbc.connect("DSN=drill64", autocommit=True)
 
 cursor = conn.cursor()
 
-sql="SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` limit 10000 "
-customer_directory_df=pd.read_sql(sql, conn)
+sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` limit 10000 "
+customer_directory_df = pd.read_sql(sql, conn)
 
 text_input = TextInput(title="Name Contains:")
 sort_options = ['name', 'phone_number', 'first_visit']
 sortby = Select(title="Sort by",
+                value="name",
                 options=sort_options)
 controls = [text_input, sortby]
 for control in controls:
-    control.on_change('value', lambda attr, old, new: update())
+    control.on_change('value', lambda attr, old, new: customer_directory_filter())
 
-def update():
-    sql="SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 1000"
-    logger.debug(text_input.value.strip())
+
+def customer_directory_filter():
+    # sorting by date requires converting the character string in first_visit
+    if (sortby.value == 'first_visit'):
+        sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by first_visit_date_type limit 1000"
+    else:
+        sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 1000"
+    logger.debug("Executing SQL: " + sql)
     global customer_directory_df, headshots, customer_directory_source
     customer_directory_df = pd.read_sql(sql, conn)
-    logger.debug(customer_directory_df.size)
+    # logger.debug("Result size = " + customer_directory_df.size)
     # Add headshot to each row of customer_directory_df
     # Load face image files for each customer
-    headshots_path="/home/mapr/customer360/bokeh/static/face_images/"
+    headshots_path = "/home/mapr/customer360/bokeh/static/face_images/"
     headshots = [f for f in listdir(headshots_path) if isfile(join(headshots_path, f))]
     # We have a dataset of face images, but we may not have enough face images for every customer
     # So we'll just use the same images for some customers.
@@ -61,19 +69,20 @@ def update():
     # print(df['headshot'][len(df)-1])
 
     # Add tenure to each row of customer_directory_df
-    customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(lambda x: (datetime.today() - datetime.strptime(x, '%m/%d/%Y')).days)
+    customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(
+        lambda x: (datetime.today() - datetime.strptime(x, '%m/%d/%Y')).days)
 
     customer_directory_source.data = {
-        'name'           : customer_directory_df.name,
-        'phone_number'   : customer_directory_df.phone_number,
-        'tenure'   : ((customer_directory_df.tenure/365).astype(int)).astype(str)+'yr'
+        'name': customer_directory_df.name,
+        'phone_number': customer_directory_df.phone_number,
+        'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr'
     }
-
+    add_glyphs()
 
 
 # Add headshot to each row of customer_directory_df
 # Load face image files for each customer
-headshots_path="/home/mapr/customer360/bokeh/static/face_images/"
+headshots_path = "/home/mapr/customer360/bokeh/static/face_images/"
 headshots = [f for f in listdir(headshots_path) if isfile(join(headshots_path, f))]
 # We have a dataset of face images, but we may not have enough face images for every customer
 # So we'll just use the same images for some customers.
@@ -86,11 +95,13 @@ customer_directory_df['headshot'] = headshots
 # print(df['headshot'][len(df)-1])
 
 # Add tenure to each row of customer_directory_df
-customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(lambda x: (datetime.today() - datetime.strptime(x, '%m/%d/%Y')).days)
+customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(
+    lambda x: (datetime.today() - datetime.strptime(x, '%m/%d/%Y')).days)
 
 customer_directory_source = ColumnDataSource(data=dict())
 
 pageviews_reset = True
+
 
 def selection_update(new):
     import random
@@ -101,7 +112,7 @@ def selection_update(new):
     inds = np.array(new['1d'][u'indices'])
     selected_names = customer_directory_source.data['name'][inds]
     current = customer_directory_df[customer_directory_df['name'].isin(selected_names)]
-    image_file = "bokeh/static/face_images/"+str(current.iloc[0].headshot)
+    image_file = "bokeh/static/face_images/" + str(current.iloc[0].headshot)
     logger.debug("Selected Names:")
     logger.debug(selected_names)
     logger.debug("Cumulative Churn Risk:")
@@ -111,21 +122,23 @@ def selection_update(new):
 
     headshot.text = str('<img src=') + image_file + str(' alt="face" width="150">')
 
-    machine_learning_table.data={
-        'Characteristic': ['Churn Risk','Sentiment','Persona','Upsell','Lifetime Value'],
-        'Prediction': [str(int(current['churn_risk'].iloc[0]))+'%',
+    machine_learning_table.data = {
+        'Characteristic': ['Churn Risk', 'Sentiment', 'Persona', 'Upsell', 'Lifetime Value'],
+        'Prediction': [str(int(current['churn_risk'].iloc[0])) + '%',
                        current['sentiment'].iloc[0],
-                       'Group ' + str(np.random.randint(low=1,high=4)),
+                       'Group ' + str(np.random.randint(low=1, high=4)),
                        'Auto Loan',
-                       '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(100 + np.random.randint(low=0, high=899))]
+                       '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(
+                           100 + np.random.randint(low=0, high=899))]
     }
 
     # Generate a new spend rate curve
-    purchases=txndf[txndf['Amount']<0]
-    purchases=purchases.iloc[::-1]
-    purchases['Day'] = purchases['Date'].apply(lambda x: (x - purchases['Date'].iloc[0]) / np.timedelta64(1, 'D') + random.randint(-5,5)).astype(int)
+    purchases = txndf[txndf['Amount'] < 0]
+    purchases = purchases.iloc[::-1]
+    purchases['Day'] = purchases['Date'].apply(
+        lambda x: (x - purchases['Date'].iloc[0]) / np.timedelta64(1, 'D') + random.randint(-5, 5)).astype(int)
 
-    purchases['Amount'] = purchases['Amount'].apply(lambda x: x*random.uniform(.5,2))
+    purchases['Amount'] = purchases['Amount'].apply(lambda x: x * random.uniform(.5, 2))
 
     # # ensure purchase amounts are non-negative
     # purchases_update=pd.DataFrame.from_dict(data=dict(day=purchases['Day'],
@@ -138,23 +151,23 @@ def selection_update(new):
                                  purchase_amount=abs(purchases['Amount']),
                                  accumulated_purchases=abs(purchases['Amount']).cumsum())
 
-    cleaned_purchases=pd.DataFrame.from_dict(purchase_history.data)
+    cleaned_purchases = pd.DataFrame.from_dict(purchase_history.data)
 
-    x=cleaned_purchases.day
-    y=cleaned_purchases.accumulated_purchases
+    x = cleaned_purchases.day
+    y = cleaned_purchases.accumulated_purchases
 
     lr = LinearRegression()
     lr.fit(x[:, np.newaxis], y)
 
     y_lr = lr.predict(x[:, np.newaxis])
 
-    x = [purchases['Date'].iloc[0] + np.timedelta64(x.min()-7, 'D'),
-         purchases['Date'].iloc[0] + np.timedelta64(x.max()+7, 'D')]
-    y=[y_lr.min(), y_lr.max()]
+    x = [purchases['Date'].iloc[0] + np.timedelta64(x.min() - 7, 'D'),
+         purchases['Date'].iloc[0] + np.timedelta64(x.max() + 7, 'D')]
+    y = [y_lr.min(), y_lr.max()]
     # lines_source = ColumnDataSource(data=dict(x=x, y=y))
     lines_source.data = dict(x=x, y=y)
 
-    gmapsource.data=dict(
+    gmapsource.data = dict(
         desc=current.name.tolist(),
         lat=current.latitude.tolist(),
         lon=current.longitude.tolist(),
@@ -168,21 +181,23 @@ def selection_update(new):
     global pageviews_reset
     pageviews_reset = True
 
+
 def make_default_selection():
     # Processes selections in the customer name directory table
     current = customer_directory_df[customer_directory_df['name'] == ('Eva Peterson')]
-    image_file = "bokeh/static/face_images/"+str(current.iloc[0].headshot)
+    image_file = "bokeh/static/face_images/" + str(current.iloc[0].headshot)
     headshot.text = str('<img src=') + image_file + str(' alt="face" width="150">')
 
-    machine_learning_table.data={
-        'Characteristic': ['Churn Risk','Sentiment','Persona','Upsell','Lifetime Value'],
-        'Prediction': [str(int(current['churn_risk'].iloc[0]/100)+1)+'%',
+    machine_learning_table.data = {
+        'Characteristic': ['Churn Risk', 'Sentiment', 'Persona', 'Upsell', 'Lifetime Value'],
+        'Prediction': [str(int(current['churn_risk'].iloc[0] / 100) + 1) + '%',
                        current['sentiment'].iloc[0],
-                       'Group ' + str(np.random.randint(low=1,high=4)),
+                       'Group ' + str(np.random.randint(low=1, high=4)),
                        'Auto Loan',
-                       '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(100 + np.random.randint(low=0, high=899))]
+                       '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(
+                           100 + np.random.randint(low=0, high=899))]
     }
-    gmapsource.data=dict(
+    gmapsource.data = dict(
         desc=customer_directory_df.name.head(1000).tolist(),
         lat=customer_directory_df.latitude.head(1000).tolist(),
         lon=customer_directory_df.longitude.head(1000).tolist(),
@@ -193,19 +208,21 @@ def make_default_selection():
     )
     gmapplot.add_glyph(gmapsource, circle)
 
+
 columns = [
     TableColumn(field="name", title="Name"),
     TableColumn(field="phone_number", title="Phone"),
     TableColumn(field="tenure", title="Tenure", width=90, formatter=StringFormatter())
-    #TableColumn(field="salary", title="Income", formatter=NumberFormatter(format="0.000%")),
+    # TableColumn(field="salary", title="Income", formatter=NumberFormatter(format="0.000%")),
 ]
 
-customer_directory_table = DataTable(source=customer_directory_source, columns=columns, row_headers=False, editable=True, width=280, height=480)
+customer_directory_table = DataTable(source=customer_directory_source, columns=columns, row_headers=False,
+                                     editable=True, width=280, height=400)
 customer_directory_source.on_change('selected', lambda attr, old, new: selection_update(new))
 customer_directory_source.data = {
-    'name'           : customer_directory_df.name,
-    'phone_number'   : customer_directory_df.phone_number,
-    'tenure'   : ((customer_directory_df.tenure/365).astype(int)).astype(str)+'yr'
+    'name': customer_directory_df.name,
+    'phone_number': customer_directory_df.phone_number,
+    'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr'
 }
 
 churn_table_columns = [
@@ -216,15 +233,16 @@ churn_table_columns = [
 
 machine_learning_table = ColumnDataSource(data=dict())
 
-ML_table = DataTable(source=machine_learning_table, columns=churn_table_columns, row_headers=False, editable=True, width=280, height=160)
+ML_table = DataTable(source=machine_learning_table, columns=churn_table_columns, row_headers=False, editable=True,
+                     width=280, height=160)
 
 ##############################################################################
 # Create heatmap
 ##########################
 
 from heatmap import create_heatmap
-hm = create_heatmap(customer_directory_df)
 
+hm = create_heatmap(customer_directory_df)
 
 ##############################################################################
 # define geo map
@@ -251,11 +269,18 @@ gmapplot = GMapPlot(
 
 gmapplot.title.text = "Customer Location, Tenure, and Sentiment"
 
-#size=(datetime.today() - datetime.strptime('01/13/1999', '%m/%d/%Y')).days
-max = customer_directory_df['tenure'].loc[customer_directory_df['tenure'].idxmax()]
-customer_directory_df['glyphsize'] = customer_directory_df['tenure'].apply(lambda x: (10 * x / max))
-customer_directory_df['glyphcolor'] = pd.Series(customer_directory_df.sentiment, dtype="category")
-customer_directory_df['glyphcolor'] = customer_directory_df['glyphcolor'].cat.rename_categories(['red', 'grey', 'blue'])
+
+# size=(datetime.today() - datetime.strptime('01/13/1999', '%m/%d/%Y')).days
+def add_glyphs():
+    global customer_directory_df
+    max = customer_directory_df['tenure'].loc[customer_directory_df['tenure'].idxmax()]
+    customer_directory_df['glyphsize'] = customer_directory_df['tenure'].apply(lambda x: (10 * x / max))
+    customer_directory_df['glyphcolor'] = pd.Series(customer_directory_df.sentiment, dtype="category")
+    customer_directory_df['glyphcolor'] = customer_directory_df['glyphcolor'].cat.rename_categories(
+        ['red', 'grey', 'blue'])
+
+
+add_glyphs()
 
 # Data to be visualized (equal length arrays)
 gmapsource = ColumnDataSource(
@@ -287,7 +312,6 @@ gmaphover = HoverTool(
     ]
 )
 gmapplot.add_tools(gmaphover)
-
 
 # ##############################################################################
 # # Drill queries
@@ -335,34 +359,36 @@ from math import pi
 from bokeh.models.glyphs import Line
 
 DATA_FILE = "/home/mapr/credit_card_transactions.csv"
-txndf=pd.read_csv(DATA_FILE, thousands=',')
+txndf = pd.read_csv(DATA_FILE, thousands=',')
 txndf['Date'] = pd.to_datetime(txndf['Date'], format='%m/%d/%Y')
 
 # ignore refunds and deposits to credit card account
-purchases=txndf[txndf['Amount']<0]
+purchases = txndf[txndf['Amount'] < 0]
 # reverse the data so the accumulator starts from oldest date
-purchases=purchases.iloc[::-1]
+purchases = purchases.iloc[::-1]
 # # create a column to count days elapsed since first purchase
 
-purchases['Day'] = purchases['Date'].apply(lambda x: (x - purchases['Date'].iloc[0]) / np.timedelta64(1, 'D')).astype(int)
+purchases['Day'] = purchases['Date'].apply(lambda x: (x - purchases['Date'].iloc[0]) / np.timedelta64(1, 'D')).astype(
+    int)
 
 # # ensure purchase amounts are non-negative
-cleaned_purchases=pd.DataFrame.from_dict(data=dict(day=purchases['Day'],
-                                                   date=purchases['Date'],
-                                                   purchase_amount=abs(purchases['Amount']),
-                                                   accumulated_purchases=abs(purchases['Amount']).cumsum()))
+cleaned_purchases = pd.DataFrame.from_dict(data=dict(day=purchases['Day'],
+                                                     date=purchases['Date'],
+                                                     purchase_amount=abs(purchases['Amount']),
+                                                     accumulated_purchases=abs(purchases['Amount']).cumsum()))
 purchase_history = ColumnDataSource(data=cleaned_purchases)
 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-x=cleaned_purchases.day
-y=cleaned_purchases.accumulated_purchases
+
+x = cleaned_purchases.day
+y = cleaned_purchases.accumulated_purchases
 
 lr = LinearRegression()
 lr.fit(x[:, np.newaxis], y)
 y_lr = lr.predict(x[:, np.newaxis])
 days_in_a_lifetime = [[600]]
-lifetime_value = "{:,}".format(int(lr.predict(days_in_a_lifetime)[0])*10)
+lifetime_value = "{:,}".format(int(lr.predict(days_in_a_lifetime)[0]) * 10)
 
 # create and render a scatter plot for accumulated purchases
 plt = figure(width=280, height=200, x_axis_type="datetime", title='Spend Rate', toolbar_location=None)
@@ -372,19 +398,17 @@ plt.circle('date', 'accumulated_purchases', source=purchase_history, size=2)
 # plt.line([purchases['Date'].iloc[0] + np.timedelta64(x.min(), 'D'),
 #           purchases['Date'].iloc[0] + np.timedelta64(x.max(), 'D')],
 #          [y_lr.min(), y_lr.max()], color='red', line_width=2)
-plt.xaxis.major_label_orientation = pi/4
+plt.xaxis.major_label_orientation = pi / 4
 
-x = [purchases['Date'].iloc[0] + np.timedelta64(x.min()-7, 'D'),
-      purchases['Date'].iloc[0] + np.timedelta64(x.max()+7, 'D')]
-y=[y_lr.min(), y_lr.max()]
+x = [purchases['Date'].iloc[0] + np.timedelta64(x.min() - 7, 'D'),
+     purchases['Date'].iloc[0] + np.timedelta64(x.max() + 7, 'D')]
+y = [y_lr.min(), y_lr.max()]
 lines_source = ColumnDataSource(data=dict(x=x, y=y))
 line = Line(x='x', y='y', line_color="red", line_width=2, line_alpha=.8)
 plt.add_glyph(lines_source, line)
 
-
-
 ###############################################################################
-# continuous animation graph
+# continuous animation graph for page views
 #######################################
 from numpy import asarray, cumprod, clip, ones, arange
 from numpy.random import lognormal, rand, choice
@@ -394,9 +418,8 @@ from bokeh.models import FuncTickFormatter
 from bokeh.driving import count
 from bokeh.models import LinearAxis, Range1d
 
-
 averages = choice([2, 1], size=100, p=[.3, .7])
-times = arange(0,100,1)
+times = arange(0, 100, 1)
 
 cont_source = ColumnDataSource(dict(
     time=[], average=[]
@@ -415,38 +438,43 @@ pageview_plt.xaxis.major_label_orientation = pi / 4
 pageview_plt.xgrid.grid_line_color = None
 pageview_plt.ygrid.grid_line_color = None
 
+
 def _create_datapoints():
     average = choice([2, 1, -1], size=1, p=[.002, .008, .990])
     return average[0]
 
+
 reset_t = -1
-@count()
-def cont_update(t):
+# @count() annotation increments t every time cont_update is called
+t=0
+def cont_update():
     # initialize or reset the pageviews graph
-    global reset_t, pageviews_reset
+    global reset_t, pageviews_reset, t
+    t=t+1
     # if reset is true, write a bunch of new values to the graph
     if pageviews_reset == True:
-        if reset_t < t:
-            reset_t = t+1800
-        if reset_t == t:
-            pageviews_reset = False
-        average = 0 if t < (reset_t-400) else _create_datapoints()
-        new_data = dict(
-            time=[t],
-            average=[average]
+        pageviews_reset = False
+        average = []
+        for x in range(200):
+            average.append(-1)
+        for x in range(400):
+            average.append(_create_datapoints())
+        newdata = dict(
+            time=[t+x for x in range(600)],
+            average=average
         )
-        cont_source.stream(new_data, 600)
-        cont_update(t)
+        t=t+600
+        cont_source.stream(new_data=newdata, rollover=600)
 
-    # update the pageviews graph
-    # average = 1 if t == 600 else _create_datapoints(t)
     else:
         average = _create_datapoints()
-        new_data = dict(
+        newdata = dict(
             time=[t],
             average=[average]
         )
-        cont_source.stream(new_data, 600)
+        cont_source.stream(new_data=newdata, rollover=600)
+
+
 
 ##############################################################################
 # layout the page elements
@@ -474,10 +502,12 @@ has = Div(text='<p>Has:</p><ul>'
                '<li>Savings Account</li>'
                '<li>Credit Card</li>'
                '<li>Roth IRA</li></ul>')
+newline = Div(text="""<br>""")
 
 title = widgetbox(intro, width=700)
-column1 = widgetbox(customer_directory_title, text_input, sortby, customer_directory_table, width=300)
-column2 = column(widgetbox(ML_column_title, ML_table, width=300), gridplot([[plt], [pageview_plt]], toolbar_location=None, plot_width=300))
+column1 = widgetbox(customer_directory_title, text_input, sortby, newline, customer_directory_table, width=300)
+column2 = column(widgetbox(ML_column_title, ML_table, width=300),
+                 gridplot([[plt], [pageview_plt]], toolbar_location=None, plot_width=300))
 column3 = widgetbox(Persona_column_title, headshot, needs, has, width=300)
 # drill_table_widget = widgetbox(drill_table)
 
@@ -498,5 +528,3 @@ curdoc().add_periodic_callback(cont_update, 100)
 curdoc().title = "Customer 360 Demo"
 
 make_default_selection()
-
-
