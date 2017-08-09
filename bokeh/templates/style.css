@@ -42,6 +42,11 @@ ul {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 1em;
 }
+.small {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: .8em;
+    color: dimgrey;
+}
 .customer360_hype_container
 {
     display: inline-block;

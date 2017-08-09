@@ -3,21 +3,53 @@ Notional Customer 360 Dashboard.
 """
 
 import pandas as pd
-import numpy as np
 import logging
-from sklearn.datasets import make_classification, make_regression
 from os import listdir
-from os.path import dirname, join, isfile
-from bokeh.layouts import row, widgetbox, column, gridplot, layout
-from bokeh.models import ColumnDataSource, CustomJS, FixedTicker, Div, PreText, Range1d, Select
-from bokeh.io import curdoc
-from bokeh.models.widgets import Slider, Button, DataTable, TableColumn, StringFormatter, NumberFormatter, TextInput, \
-    AutocompleteInput
+from os.path import join, isfile
+from bokeh.layouts import widgetbox, layout
+from bokeh.models import ColumnDataSource, Div, Select
+from bokeh.models.widgets import DataTable, TableColumn, StringFormatter, TextInput
 import pyodbc
 from bokeh.models import HoverTool
-from datetime import datetime, timedelta
-import math
+from datetime import datetime
 import sys
+import timeit
+
+########################################################
+# Define Div sections
+########################################################
+
+headliner = Div(text="""<div class="content"> <h1>Customer 360 powered by MapR&trade;</h1> <p>The <a 
+href="https://mapr.com/products/mapr-converged-data-platform/">MapR Converged Data Platform</a> is uniquely suited to 
+run Customer 360 applications. Operational and analytical workloads can operate together on the same cluster used for 
+cloud scale storage, schema-free data integration, real-time streaming, and machine learning. Those capabilities 
+enable applications to use more information in more ways than has ever been possible before. The application shown 
+below uses those capabiltiies to help customer support representatives quickly determine customer personality, 
+propensity to buy, and likelihood to churn. Check out the <a 
+href="https://mapr.com/solutions/quickstart/customer-360-knowing-your-customer-is-step-one/">Customer 360 Quick Start 
+Solution</a> to learn more about MapR's solutions for Customer 360 applications.</p> <div 
+id="customer360_hype_container" style="margin:auto;position:relative;width:900px;height:400px;overflow:hidden;"> 
+<script type="text/javascript" charset="utf-8" 
+src="bokeh/static/js/customer360.hyperesources/customer360_hype_generated_script.js?34086"></script> </div> </div>""")
+intro = Div(text="""<div class="content"><hr><h1>Customer Intelligence Portal for ACME Bank </h1></div>""")
+customer_directory_title = Div(text="""<h3>Customer Directory:</h3>""")
+ML_column_title = Div(text="""<h3>Machine Learning:</h3>""")
+Persona_column_title = Div(text="""<h3>Selected Customer:</h3>""")
+
+headshot = Div(text='<img src="bokeh/static/face_images/84b.jpg" alt="face" width="150">')
+selected_name = Div(text='<p><strong>Name:</strong> Eva Peterson</p>')
+needs = Div(text='<p>Needs:</p><ul>'
+                 '<li>Home, car, and property insurance</li>'
+                 '<li>To save for retirement</li>'
+                 '<li>To exchange foreign currencies</li>'
+                 '</ul>')
+has = Div(text='<p>Has:</p><ul>'
+               '<li>Savings Account</li>'
+               '<li>Credit Card</li>'
+               '<li>Roth IRA</li></ul>')
+newline = Div(text="""<br>""")
+query_performance = Div(text="""<div class="content"><br></div>""")
+
 
 sys.setrecursionlimit(10000)
 
@@ -25,14 +57,22 @@ logger = logging.getLogger('bokeh')
 logger.setLevel(logging.DEBUG)
 
 conn = pyodbc.connect("DSN=drill64", autocommit=True)
-# Don't specify unicode encoding with MapR 6.0.
+# Specify unicode options only for MapR 5.2:
 # conn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-32le', to=str)
 # conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le', to=str)
 
 cursor = conn.cursor()
 
-sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` limit 10000 "
+sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment " \
+      "FROM `dfs.default`.`./tmp/crm_data` limit 100000"
+logger.debug("executing SQL: " + sql)
+t0 = timeit.timeit()
 customer_directory_df = pd.read_sql(sql, conn)
+elapsed_time = abs(round(timeit.timeit() - t0, 4))
+logger.debug("elapsed time: " + str(elapsed_time))
+logger.debug("records returned: " + str(len(customer_directory_df.index)))
+query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected (" + str(elapsed_time) + " seconds)" + "</div>"
+
 
 text_input = TextInput(title="Name Contains:")
 sort_options = ['name', 'phone_number', 'first_visit']
@@ -47,13 +87,18 @@ for control in controls:
 def customer_directory_filter():
     # sorting by date requires converting the character string in first_visit
     if (sortby.value == 'first_visit'):
-        sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by first_visit_date_type limit 1000"
+        sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by first_visit_date_type limit 100000"
     else:
-        sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 1000"
-    logger.debug("Executing SQL: " + sql)
+        sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 100000"
+    logger.debug("executing SQL: " + sql)
     global customer_directory_df, headshots, customer_directory_source
+    t0 = timeit.timeit()
     customer_directory_df = pd.read_sql(sql, conn)
-    # logger.debug("Result size = " + customer_directory_df.size)
+    elapsed_time = abs(round(timeit.timeit() - t0, 4))
+    logger.debug("elapsed time: " + str(elapsed_time))
+    logger.debug("records returned: " + str(len(customer_directory_df.index)))
+    query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected (" + str(elapsed_time) + " seconds)" + "</div>"
+
     # Add headshot to each row of customer_directory_df
     # Load face image files for each customer
     headshots_path = "/home/mapr/customer360/bokeh/static/face_images/"
@@ -74,6 +119,7 @@ def customer_directory_filter():
 
     customer_directory_source.data = {
         'name': customer_directory_df.name,
+        'phone_number': customer_directory_df.phone_number,
         'phone_number': customer_directory_df.phone_number,
         'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr'
     }
@@ -219,7 +265,8 @@ columns = [
 ]
 
 customer_directory_table = DataTable(source=customer_directory_source, columns=columns, row_headers=False,
-                                     editable=True, width=280, height=400)
+                                     editable=True, width=280, height=300)
+
 customer_directory_source.on_change('selected', lambda attr, old, new: selection_update(new))
 customer_directory_source.data = {
     'name': customer_directory_df.name,
@@ -360,6 +407,7 @@ from bokeh.models import ColumnDataSource, DatetimeTickFormatter, NumeralTickFor
 from math import pi
 from bokeh.models.glyphs import Line
 
+# TODO: put this in maprdb and query it with Drill
 DATA_FILE = "/home/mapr/credit_card_transactions.csv"
 txndf = pd.read_csv(DATA_FILE, thousands=',')
 txndf['Date'] = pd.to_datetime(txndf['Date'], format='%m/%d/%Y')
@@ -482,33 +530,8 @@ def cont_update():
 # layout the page elements
 ##########################
 
-headliner = Div(text="""<div class="content">
-      <h1>Customer 360 powered by MapR&trade;</h1>
-      <p>The <a href="https://mapr.com/products/mapr-converged-data-platform/">MapR Converged Data Platform</a> is uniquely suited to run Customer 360 applications. Operational and analytical workloads can operate together on the same cluster used for cloud scale storage, schema-free data integration, real-time streaming, and machine learning. Those capabilities enable applications to use more information in more ways than has ever been possible before. The application shown below uses those capabiltiies to help customer support representatives quickly determine customer personality, propensity to buy, and likelihood to churn. Check out the <a href="https://mapr.com/solutions/quickstart/customer-360-knowing-your-customer-is-step-one/">Customer 360 Quick Start Solution</a> to learn more about MapR's solutions for Customer 360 applications.</p>
-      <div id="customer360_hype_container" style="margin:auto;position:relative;width:900px;height:400px;overflow:hidden;">
-		<script type="text/javascript" charset="utf-8" src="bokeh/static/js/customer360.hyperesources/customer360_hype_generated_script.js?34086"></script>
-	</div>
-  </div>""")
-intro = Div(text="""<div class="content"><hr><h1>Customer Intelligence Portal for ACME Bank </h1></div>""")
-customer_directory_title = Div(text="""<h3>Customer Directory:</h3>""")
-ML_column_title = Div(text="""<h3>Machine Learning:</h3>""")
-Persona_column_title = Div(text="""<h3>Selected Customer:</h3>""")
-
-headshot = Div(text='<img src="bokeh/static/face_images/84b.jpg" alt="face" width="150">')
-selected_name = Div(text='<p><strong>Name:</strong> Eva Peterson</p>')
-needs = Div(text='<p>Needs:</p><ul>'
-                 '<li>Home, car, and property insurance</li>'
-                 '<li>To save for retirement</li>'
-                 '<li>To exchange foreign currencies</li>'
-                 '</ul>')
-has = Div(text='<p>Has:</p><ul>'
-               '<li>Savings Account</li>'
-               '<li>Credit Card</li>'
-               '<li>Roth IRA</li></ul>')
-newline = Div(text="""<br>""")
-
 title = widgetbox(intro, width=700)
-column1 = widgetbox(customer_directory_title, text_input, sortby, newline, customer_directory_table, width=300)
+column1 = widgetbox(customer_directory_title, text_input, sortby, newline, customer_directory_table, query_performance, width=300)
 column2 = column(widgetbox(ML_column_title, ML_table, width=300),
                  gridplot([[plt], [pageview_plt]], toolbar_location=None, plot_width=300))
 column3 = widgetbox(Persona_column_title, headshot, selected_name, needs, has, width=300)

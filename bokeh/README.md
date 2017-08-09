@@ -19,12 +19,40 @@ We are using Ian's Intel NUC devices to run this bokeh app.
 - Data must have already been copied to /mapr/my.cluster.com/dialogue_corpus
 - Data must have already been copied to /mapr/my.cluster.com/face_images
 
-# Create the CRM table in MapR-DB
+# Create a master customer table in MapR-DB
 
-Copy the provided datasets/crm_data.json file to the cluster and create the CRM database like this:
+Copy `datasets/crm_data.json` to the cluster and import it into MapR-DB like this:
 
     `/opt/mapr/spark/spark-2.0.1/bin/spark-submit --master local[2] --class com.mapr.demo.customer360.LoadJsonToMaprDB mapr-demo-customer360-1.0-jar-with-dependencies.jar /mapr/my.cluster.com/user/mapr/crm_data.json /tmp/crm_data`
 
+Verify that the table was created by running this command:
+
+```
+$ mapr dbshell "find /tmp/crm_data --limit 2"
+```
+
+    
+## Configure secondary indexes
+
+Create secondary indexes for the email and phone number fields. This will make it faster to load and filter the 
+customer directory table.
+
+
+```
+$ maprcli table index add -path /tmp/crm_data -index idx_email -indexedfields '"email":-1' -includedfields '"name"'
+
+```
+
+You can verify that completed successfully by ensuring "email" and "name" are in the `coveredFields` attribute shown
+by the following command:
+
+```
+$ sqlline
+
+sqlline> !connect jdbc:drill:zk=localhost:5181
+sqlline> explain plan for select name, phone_number, email from dfs.`/tmp/crm_data` where email = 'RoslynSolomon@example.com';
+```
+    
 
 # Start Bokeh
 
