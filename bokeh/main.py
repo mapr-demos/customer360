@@ -7,7 +7,7 @@ import logging
 from os import listdir
 from os.path import join, isfile
 from bokeh.layouts import widgetbox, layout
-from bokeh.models import ColumnDataSource, Div, Select
+from bokeh.models import ColumnDataSource, Div, Select, RadioButtonGroup
 from bokeh.models.widgets import DataTable, TableColumn, StringFormatter, TextInput
 import pyodbc
 from bokeh.models import HoverTool
@@ -63,20 +63,21 @@ conn = pyodbc.connect("DSN=drill64", autocommit=True)
 
 cursor = conn.cursor()
 
-sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment " \
-      "FROM `dfs.default`.`./tmp/crm_data` limit 100000"
+sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, churn_risk, sentiment " \
+      "FROM `dfs.default`.`./tmp/crm_data`"
 logger.debug("executing SQL: " + sql)
 t0 = timeit.timeit()
 customer_directory_df = pd.read_sql(sql, conn)
 elapsed_time = abs(round(timeit.timeit() - t0, 4))
 logger.debug("elapsed time: " + str(elapsed_time))
 logger.debug("records returned: " + str(len(customer_directory_df.index)))
-query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected (" + str(elapsed_time) + " seconds)" + "</div>"
+query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected (" + \
+                         str(elapsed_time) + " seconds)" + "</div>"
 
-
-text_input = TextInput(title="Name Contains:")
-sort_options = ['name', 'phone_number', 'first_visit']
-sortby = Select(title="Sort by",
+text_input = TextInput(title="Filter by Name:", width=180)
+sort_options = ['name', 'phone_number', 'email', 'first_visit']
+sortby = Select(title="Order by:",
+                width=50,
                 value="name",
                 options=sort_options)
 controls = [text_input, sortby]
@@ -87,9 +88,9 @@ for control in controls:
 def customer_directory_filter():
     # sorting by date requires converting the character string in first_visit
     if (sortby.value == 'first_visit'):
-        sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by first_visit_date_type limit 100000"
+        sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by first_visit_date_type"
     else:
-        sql = "SELECT _id, name, address, phone_number, latitude, longitude, zip, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 100000"
+        sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value
     logger.debug("executing SQL: " + sql)
     global customer_directory_df, headshots, customer_directory_source
     t0 = timeit.timeit()
@@ -97,7 +98,8 @@ def customer_directory_filter():
     elapsed_time = abs(round(timeit.timeit() - t0, 4))
     logger.debug("elapsed time: " + str(elapsed_time))
     logger.debug("records returned: " + str(len(customer_directory_df.index)))
-    query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected (" + str(elapsed_time) + " seconds)" + "</div>"
+    query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected (" + \
+                         str(elapsed_time) + " seconds)" + "</div>"
 
     # Add headshot to each row of customer_directory_df
     # Load face image files for each customer
@@ -120,7 +122,7 @@ def customer_directory_filter():
     customer_directory_source.data = {
         'name': customer_directory_df.name,
         'phone_number': customer_directory_df.phone_number,
-        'phone_number': customer_directory_df.phone_number,
+        'email': customer_directory_df.email,
         'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr'
     }
     add_glyphs()
@@ -258,19 +260,21 @@ def make_default_selection():
 
 
 columns = [
-    TableColumn(field="name", title="Name"),
-    TableColumn(field="phone_number", title="Phone"),
-    TableColumn(field="tenure", title="Tenure", width=90, formatter=StringFormatter())
+    TableColumn(field="name", title="Name", width=120),
+    TableColumn(field="phone_number", title="Phone", width=100),
+    TableColumn(field="email", title="Email", width=150),
+    TableColumn(field="tenure", title="Tenure", width=60, formatter=StringFormatter())
     # TableColumn(field="salary", title="Income", formatter=NumberFormatter(format="0.000%")),
 ]
 
 customer_directory_table = DataTable(source=customer_directory_source, columns=columns, row_headers=False,
-                                     editable=True, width=280, height=300)
+                                     editable=True, width=280, height=300, fit_columns=False)
 
 customer_directory_source.on_change('selected', lambda attr, old, new: selection_update(new))
 customer_directory_source.data = {
     'name': customer_directory_df.name,
     'phone_number': customer_directory_df.phone_number,
+    'email': customer_directory_df.email,
     'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr'
 }
 
@@ -298,8 +302,7 @@ hm = create_heatmap(customer_directory_df)
 ##################
 
 from bokeh.models import (
-    GMapPlot, GMapOptions, ColumnDataSource, Circle, LinearColorMapper, BasicTicker, ColorBar,
-    DataRange1d
+    GMapPlot, GMapOptions, ColumnDataSource, Circle, LinearColorMapper, DataRange1d
 )
 
 # map_options = GMapOptions(lat=37.6, lng=-119.5, map_type="roadmap", zoom=6)
@@ -362,40 +365,6 @@ gmaphover = HoverTool(
 )
 gmapplot.add_tools(gmaphover)
 
-# ##############################################################################
-# # Drill queries
-# # NOTE!  This won't work with anaconda panda. It throws a symbol error.
-# ##############################
-#
-# # Initialize the connection
-# # The DSN was defined with the iODBC Administrator app for Mac.
-# conn = pyodbc.connect("DSN=drill64", autocommit=True)
-# conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le')
-# cursor = conn.cursor()
-#
-# # Setup a SQL query to select data from a csv file.
-# # The csv2 filename extension tells Drill to extract
-# # column names from the first row.
-# # sql = "SELECT * FROM `dfs.tmp`.`./companylist.csv2` limit 3"
-# # Execute the SQL query
-# # print(pandas.read_sql(sql, conn))
-# # Here's how to select data from MySQL
-# # s = "select * from ianmysql.mysql.`user`"
-# # pandas.read_sql(s, conn)
-#
-# # Here's an example of a SQL JOIN the combines a JSON file with a MySQL table.
-# sql = "SELECT tbl1.name, tbl2.address FROM `dfs.tmp`.`./names.json` as tbl1 \
-#      JOIN `dfs.tmp`.`./addressunitedstates.json` as tbl2 ON tbl1.id=tbl2.id"
-#
-#
-# drill_data = ColumnDataSource(data=pd.read_sql(sql, conn))
-# drill_columns = [
-#     TableColumn(field="name", title="Name"),
-#     TableColumn(field="phone_number", title="Phone"),
-#     TableColumn(field="first_visit", title="Tenure")
-# ]
-# drill_table = DataTable(source=drill_data, columns=drill_columns, row_headers=False, width=600)
-
 ##############################################################################
 # Linear regression plot
 ################################
@@ -429,7 +398,6 @@ cleaned_purchases = pd.DataFrame.from_dict(data=dict(day=purchases['Day'],
 purchase_history = ColumnDataSource(data=cleaned_purchases)
 
 from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
 
 x = cleaned_purchases.day
 y = cleaned_purchases.accumulated_purchases
@@ -531,7 +499,7 @@ def cont_update():
 ##########################
 
 title = widgetbox(intro, width=700)
-column1 = widgetbox(customer_directory_title, text_input, sortby, newline, customer_directory_table, query_performance, width=300)
+column1 = column(widgetbox(customer_directory_title, text_input, sortby, newline, customer_directory_table, query_performance, width=300))
 column2 = column(widgetbox(ML_column_title, ML_table, width=300),
                  gridplot([[plt], [pageview_plt]], toolbar_location=None, plot_width=300))
 column3 = widgetbox(Persona_column_title, headshot, selected_name, needs, has, width=300)
@@ -544,10 +512,9 @@ row1 = [title]
 row2 = [column1, column2, column3]
 row3 = [hm]
 row4 = [gmapplot]
-# row5 = [drill_table_widget]
-l = layout([headline_row], sizing_mode='fixed')
-l2 = layout([row1, row2, row3, row4], sizing_mode='fixed')
-curdoc().add_root(l)
+l1 = layout([row1, row2, row3, row4], sizing_mode='fixed')
+l2 = layout([headline_row], sizing_mode='fixed')
+curdoc().add_root(l1)
 curdoc().add_root(l2)
 # curdoc().add_root(gridplot([[p2]], toolbar_location="left", plot_width=500))
 curdoc().add_periodic_callback(cont_update, 100)
