@@ -73,7 +73,7 @@ query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df
 text_input = TextInput(title="Filter by Name:", width=180)
 sort_options = ['name', 'phone_number', 'email', 'first_visit']
 sortby = Select(title="Order by:",
-                width=50,
+                width=180,
                 value="name",
                 options=sort_options)
 controls = [text_input, sortby]
@@ -89,13 +89,9 @@ def customer_directory_filter():
         sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value
     logger.debug("executing SQL: " + sql)
     global customer_directory_df, headshots, customer_directory_source
-    t0 = timeit.timeit()
     customer_directory_df = pd.read_sql(sql, conn)
-    elapsed_time = abs(round(timeit.timeit() - t0, 4))
-    logger.debug("elapsed time: " + str(elapsed_time))
     logger.debug("records returned: " + str(len(customer_directory_df.index)))
-    query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected (" + \
-                         str(elapsed_time) + " seconds)" + "</div>"
+    query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected</div>"
 
     # Add headshot to each row of customer_directory_df
     # Load face image files for each customer
