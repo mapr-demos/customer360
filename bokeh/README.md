@@ -96,6 +96,7 @@ It could take up to 2 minutes before the Drill web console starts.  The Drill we
     # install prerequites for scipy (without these, you'll get an error on `pip install scipy`
     sudo apt-get install libblas-dev liblapack-dev libatlas-base-dev gfortran
     # install requirements (this may not work, if it doesn't just install each one individually)
+    cd customer360/bokeh/
     sudo pip install -r requirements.txt
     # make sure you have internet access so we can download datasets
     ping www.google.com
