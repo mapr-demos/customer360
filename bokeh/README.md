@@ -6,33 +6,49 @@ We are using Ian's Intel NUC devices to run this bokeh app.
 
 # Preconditions
 
-- git must be installed. `sudo apt-get install git -y`
+- git and maven must be installed. `sudo apt-get install git maven -y`
 - virtualenv must be installed. `sudo apt-get install python-virtualenv -y`.
-- The drill64 DSN must be defined on the bokeh host. Copy `resources/odbc.ini` to `~/.odbc.ini` and `resources/odbcinst.ini` to `~/.odbcinst.ini`, then sanity check that everything in it matches your own cluster config. See the [Drill docs](https://drill.apache.org/docs/configuring-odbc-on-linux/#step-2:-define-the-odbc-data-sources-in-.odbc.ini) for more info about how to setup ODBC connectors and DSNs.
+-  Install an ODBC driver and define a data source connectors for Drill. [Here's some guidance on doing that](http://www.bigendiandata.com/2017-05-01-Apache_Drill/#connecting-to-drill-from-ubuntu). For sample config files, see `resources/odbc.ini`, `resources/odbcinst.ini`, and `resources/mapr.drillodbc.ini`. Be sure to double check that everything in those files matches your own cluster config. You'll also need to define the following environment variables in `~/.bashrc`:
+
+```
+export ODBCINI=~/.odbc.ini
+export MAPRDRILLINI=~/.mapr.drillodbc.ini
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/opt/mapr/drillodbc/lib/64:/usr/lib64:/opt/mapr/lib:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server/
+```
+
+See the [Drill docs](https://drill.apache.org/docs/configuring-odbc-on-linux/#step-2:-define-the-odbc-data-sources-in-.odbc.ini) for more info about how to setup ODBC connectors and DSNs.
 
 - anaconda and bokeh must have been installed. For example, like this:
 
 ```
 wget https://repo.continuum.io/archive/Anaconda3-4.4.0-Linux-x86_64.sh
 bash Anaconda3-4.4.0-Linux-x86_64.sh
-. ~/.basrc
+. ~/.bashrc
 conda install bokeh
 ```
-
-- you must have installed an ODBC driver and defined data source connectors for Drill. Here's some guidance on going that: [http://www.bigendiandata.com/2017-05-01-Apache_Drill/](http://www.bigendiandata.com/2017-05-01-Apache_Drill/).
-- Data must have already been copied to /mapr/my.cluster.com/dialogue_corpus
-- Data must have already been copied to /mapr/my.cluster.com/face_images
+Clone the customer360 project to your cluster, with `git clone https://github.com/mapr-demos/customer360.git`.
 
 # Create a master customer table in MapR-DB
 
-Copy `datasets/crm_data.json` to the cluster and import it into MapR-DB like this:
+Build the crm data generator tool:
+```
+cd customer360/crm_db_generator
+mvn clean
+mvn package
+cd target
+```
 
-    `/opt/mapr/spark/spark-2.0.1/bin/spark-submit --master local[2] --class com.mapr.demo.customer360.LoadJsonToMaprDB mapr-demo-customer360-1.0-jar-with-dependencies.jar /mapr/my.cluster.com/user/mapr/crm_data.json /tmp/crm_data`
+Then run these commands:
+
+```
+cp ../../bokeh/datasets/crm_data.json /mapr/my.cluster.com/user/mapr/
+/opt/mapr/spark/spark-2.1.0/bin/spark-submit --master local[2] --class com.mapr.demo.customer360.LoadJsonToMaprDB mapr-demo-customer360-1.0-jar-with-dependencies.jar /mapr/my.cluster.com/user/mapr/crm_data.json /tmp/crm_data
+```
 
 Verify that the table was created by running this command:
 
 ```
-$ mapr dbshell "find /tmp/crm_data --limit 2"
+mapr dbshell "find /tmp/crm_data --limit 2"
 ```
 
     
