@@ -32,11 +32,9 @@ $ mapr dbshell "find /tmp/crm_data --limit 2"
 ```
 
     
-## Configure secondary indexes
+## Configure secondary indexes (optional)
 
-Create secondary indexes for the email and phone number fields. This will make it faster to load and filter the 
-customer directory table.
-
+To make it faster to load and filter the customer directory table, create secondary indexes for the email and phone number fields, like this:
 
 ```
 $ maprcli table index add -path /tmp/crm_data -index idx_email -indexedfields '"email":-1' -includedfields '"name"'
@@ -53,6 +51,20 @@ sqlline> !connect jdbc:drill:zk=localhost:5181
 sqlline> explain plan for select name, phone_number, email from dfs.`/tmp/crm_data` where email = 'RoslynSolomon@example.com';
 ```
     
+## Configure global query monitoring for Drill (optional)
+
+Here is how to configure the Drill web console so it lists the queries executed by every drillbit service in a cluster, instead of just those on the local node: 
+
+Add this line inside the "drill.exec" block in `/opt/mapr/drill/drill-1.11.0/conf/drill-override.conf` on every node where Drill is installed:
+
+	sys.store.provider.zk.blobroot: "maprfs:///tmp/drill"
+
+Then restart the drillbit service:
+
+	/opt/mapr/drill/drill-1.11.0/bin/drillbit.sh restart
+
+It could take up to 2 minutes before the Drill web console starts.  The Drill web console runs on port 8042 (e.g. [http://nodea:8042](http://nodea:8042).
+
 
 # Start Bokeh
 
