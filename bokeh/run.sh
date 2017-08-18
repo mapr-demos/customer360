@@ -1,2 +1,3 @@
 #!/bin/bash
-~/customer360/bin/bokeh serve . --allow-websocket-origin '*'
+cd ~/customer360/bokeh
+bokeh serve . --allow-websocket-origin '*'
