@@ -8,16 +8,7 @@ We are using Ian's Intel NUC devices to run this bokeh app.
 
 - git and maven must be installed. `sudo apt-get install git maven -y`
 - virtualenv must be installed. `sudo apt-get install python-virtualenv -y`.
--  Install an ODBC driver and define a data source connectors for Drill. [Here's some guidance on doing that](http://www.bigendiandata.com/2017-05-01-Apache_Drill/#connecting-to-drill-from-ubuntu). For sample config files, see `resources/odbc.ini`, `resources/odbcinst.ini`, and `resources/mapr.drillodbc.ini`. Be sure to double check that everything in those files matches your own cluster config. You'll also need to define the following environment variables in `~/.bashrc`:
-
-```
-export ODBCINI=~/.odbc.ini
-export MAPRDRILLINI=~/.mapr.drillodbc.ini
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/opt/mapr/drillodbc/lib/64:/usr/lib64:/opt/mapr/lib:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server/
-```
-
-See the [Drill docs](https://drill.apache.org/docs/configuring-odbc-on-linux/#step-2:-define-the-odbc-data-sources-in-.odbc.ini) for more info about how to setup ODBC connectors and DSNs.
-
+- clone the customer360 project to your cluster, with `git clone https://github.com/mapr-demos/customer360.git`.
 - anaconda and bokeh must have been installed. For example, like this:
 
 ```
@@ -26,7 +17,29 @@ bash Anaconda3-4.4.0-Linux-x86_64.sh
 . ~/.bashrc
 conda install bokeh
 ```
-Clone the customer360 project to your cluster, with `git clone https://github.com/mapr-demos/customer360.git`.
+
+
+## Install Mapr-ODBC driver
+
+Install an ODBC driver and define a data source connectors for Drill. Run these commands, and refer to the sample `.ini` config files are included in `resources/`:
+
+```
+wget http://package.mapr.com/tools/MapR-ODBC/MapR_Drill/MapRDrill_odbc_v1.3.0.1009/maprdrill-1.3.0.1009-1.x86_64.rpm
+rpm2cpio maprdrill-1.3.0.1009-1.x86_64.rpm | cpio -idmv
+sudo mv opt/mapr/drill /opt/mapr/drillodbc
+cd /opt/mapr/drillodbc/Setup
+cp mapr.drillodbc.ini ~/.mapr.drillodbc.ini
+cp odbc.ini ~/.odbc.ini
+cp odbcinst.ini ~/.odbcinst.ini	
+
+# Put these export commands in .bashrc, too!
+export ODBCINI=~/.odbc.ini
+export MAPRDRILLINI=~/.mapr.drillodbc.ini
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/opt/mapr/drillodbc/lib/64:/usr/lib64
+```
+
+For more informaiont on setting ODBC connectors, see [http://www.bigendiandata.com/2017-05-01-Apache_Drill](http://www.bigendiandata.com/2017-05-01-Apache_Drill/#connecting-to-drill-from-ubuntu), or the [Drill docs](https://drill.apache.org/docs/configuring-odbc-on-linux/#step-2:-define-the-odbc-data-sources-in-.odbc.ini).
+
 
 # Create a master customer table in MapR-DB
 
@@ -89,19 +102,25 @@ It could take up to 2 minutes before the Drill web console starts.  The Drill we
 # Start Bokeh
 
     ssh nodea
+    # install prerequites for scipy (without these, you'll get an error on `pip install scipy`
+    sudo apt-get install libblas-dev liblapack-dev libatlas-base-dev gfortran
+    # install dependencies for pyodbc
+    sudo apt-get install python-pip unixodbc-dev python-numpy rpm2cpio
+    
     # create an isolated environment
     virtualenv env
     # enter the isolated environemnt
     source ~/env/bin/activate 
-    # install prerequites for scipy (without these, you'll get an error on `pip install scipy`
-    sudo apt-get install libblas-dev liblapack-dev libatlas-base-dev gfortran
-    # install requirements (this may not work, if it doesn't just install each one individually)
+    
+    # install python packages (this may not work, if it doesn't just install each one individually)
     cd customer360/bokeh/
     sudo pip install -r requirements.txt
+    
     # make sure you have internet access so we can download datasets
     ping www.google.com
     # run bokeh
-    ~/customer360/bin/bokeh serve . --log-level=debug --allow-websocket-origin '*'
+    cd ~/customer360/bokeh/
+    bokeh serve . --log-level=debug --allow-websocket-origin '*'
     open http://nodea:5006/bokeh
 
 # Start Jupyter
