@@ -369,7 +369,7 @@ from math import pi
 from bokeh.models.glyphs import Line
 
 # TODO: put this in maprdb and query it with Drill
-DATA_FILE = "/home/mapr/credit_card_transactions.csv"
+DATA_FILE = "/home/mapr/customer360/bokeh/datasets/credit_card_transactions.csv"
 txndf = pd.read_csv(DATA_FILE, thousands=',')
 txndf['Date'] = pd.to_datetime(txndf['Date'], format='%m/%d/%Y')
 
