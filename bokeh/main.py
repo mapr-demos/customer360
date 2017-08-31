@@ -13,8 +13,9 @@ import pyodbc
 from bokeh.models import HoverTool
 from datetime import datetime
 import sys
-import pydevd
 
+# Uncomment to trace with IntelliJ / PyCharm debugger
+# import pydevd
 # pydevd.settrace('10.1.2.100', port=5230, stdoutToServer=True, stderrToServer=True)
 
 ########################################################
