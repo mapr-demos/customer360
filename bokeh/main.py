@@ -133,6 +133,8 @@ while len(customer_directory_df) > len(headshots):
 customer_directory_df['headshot'] = headshots
 # print(df['headshot'][0])
 # print(df['headshot'][len(df)-1])
+customer_directory_df[customer_directory_df['name'] == ('Eva Peterson')].iloc[0].headshot = "84b.jpg"
+print(customer_directory_df[customer_directory_df['name'] == ('Eva Peterson')].iloc[0].headshot)
 
 # Add tenure to each row of customer_directory_df
 customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(
