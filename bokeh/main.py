@@ -129,17 +129,18 @@ if len(headshots) > len(customer_directory_df):
     headshots = headshots[:len(customer_directory_df)]
 while len(customer_directory_df) > len(headshots):
     headshots.extend(headshots[:(len(customer_directory_df) - len(headshots))])
+customer_directory_df.set_index('name')
 customer_directory_df['headshot'] = headshots
-customer_directory_df['headshot'][0] = "84b.jpg"
-customer_directory_df['headshot'][1] = "1b.jpg"
-customer_directory_df['headshot'][2] = "78b.jpg"
-customer_directory_df['headshot'][3] = "79b.jpg"
-customer_directory_df['headshot'][4] = "54b.jpg"
-customer_directory_df['headshot'][5] = "28b.jpg"
-customer_directory_df['headshot'][6] = "43b.jpg"
-customer_directory_df['headshot'][7] = "30b.jpg"
-customer_directory_df['headshot'][8] = "36b.jpg"
-customer_directory_df['headshot'][9] = "26b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Eva Peterson', 'headshot'] = "84b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Richard Escalante', 'headshot'] = "1b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Joan Payne', 'headshot'] = "78b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Rachel Worrell', 'headshot'] = "79b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Nathan Porter', 'headshot'] = "54b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Anna Champlin', 'headshot'] = "28b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Erika Gallardo', 'headshot'] = "43b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Robert Macfarlane', 'headshot'] = "30b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Danny Rearick', 'headshot'] = "36b.jpg"
+customer_directory_df.loc[customer_directory_df['name'] == 'Nicole Lewis', 'headshot'] = "26b.jpg"
 
 
 # Add tenure to each row of customer_directory_df
