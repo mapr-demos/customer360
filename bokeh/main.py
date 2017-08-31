@@ -13,7 +13,9 @@ import pyodbc
 from bokeh.models import HoverTool
 from datetime import datetime
 import sys
-import timeit
+import pydevd
+
+# pydevd.settrace('10.1.2.100', port=5230, stdoutToServer=True, stderrToServer=True)
 
 ########################################################
 # Define Div sections
@@ -64,7 +66,7 @@ conn = pyodbc.connect("DSN=drill64", autocommit=True)
 cursor = conn.cursor()
 
 sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, churn_risk, sentiment " \
-      "FROM `dfs.default`.`./tmp/crm_data`"
+      "FROM `dfs.default`.`./tmp/crm_data` limit 10000"
 logger.debug("executing SQL: " + sql)
 customer_directory_df = pd.read_sql(sql, conn)
 logger.debug("records returned: " + str(len(customer_directory_df.index)))
@@ -84,9 +86,9 @@ for control in controls:
 def customer_directory_filter():
     # sorting by date requires converting the character string in first_visit
     if (sortby.value == 'first_visit'):
-        sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by first_visit_date_type"
+        sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by first_visit_date_type limit 10000"
     else:
-        sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value
+        sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 10000"
     logger.debug("executing SQL: " + sql)
     global customer_directory_df, headshots, customer_directory_source
     customer_directory_df = pd.read_sql(sql, conn)
@@ -104,8 +106,6 @@ def customer_directory_filter():
     while len(customer_directory_df) > len(headshots):
         headshots.extend(headshots[:(len(customer_directory_df) - len(headshots))])
     customer_directory_df['headshot'] = headshots
-    # print(df['headshot'][0])
-    # print(df['headshot'][len(df)-1])
 
     # Add tenure to each row of customer_directory_df
     customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(
@@ -131,10 +131,17 @@ if len(headshots) > len(customer_directory_df):
 while len(customer_directory_df) > len(headshots):
     headshots.extend(headshots[:(len(customer_directory_df) - len(headshots))])
 customer_directory_df['headshot'] = headshots
-# print(df['headshot'][0])
-# print(df['headshot'][len(df)-1])
-customer_directory_df[customer_directory_df['name'] == ('Eva Peterson')].iloc[0].headshot = "84b.jpg"
-print(customer_directory_df[customer_directory_df['name'] == ('Eva Peterson')].iloc[0].headshot)
+customer_directory_df['headshot'][0] = "84b.jpg"
+customer_directory_df['headshot'][1] = "1b.jpg"
+customer_directory_df['headshot'][2] = "78b.jpg"
+customer_directory_df['headshot'][3] = "79b.jpg"
+customer_directory_df['headshot'][4] = "54b.jpg"
+customer_directory_df['headshot'][5] = "28b.jpg"
+customer_directory_df['headshot'][6] = "43b.jpg"
+customer_directory_df['headshot'][7] = "30b.jpg"
+customer_directory_df['headshot'][8] = "36b.jpg"
+customer_directory_df['headshot'][9] = "26b.jpg"
+
 
 # Add tenure to each row of customer_directory_df
 customer_directory_df['tenure'] = customer_directory_df['first_visit'].apply(
