@@ -421,7 +421,7 @@ headline_row = [headliner]
 row1 = [title]
 row2 = [column1, column2, column3]
 row3 = [hm]
-l1 = layout([row1, row2, row3, row4], sizing_mode='fixed')
+l1 = layout([row1, row2, row3], sizing_mode='fixed')
 l2 = layout([headline_row], sizing_mode='fixed')
 curdoc().add_root(l1)
 curdoc().add_root(l2)
