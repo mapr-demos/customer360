@@ -115,8 +115,8 @@ def customer_directory_filter():
     customer_directory_source.data = {
         'name': customer_directory_df.name,
         'phone_number': customer_directory_df.phone_number,
-        'email': customer_directory_df.email,
-        'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr'
+        'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr',
+        'email': customer_directory_df.email
     }
 
 # Add headshot to each row of customer_directory_df
@@ -241,7 +241,7 @@ columns = [
     TableColumn(field="name", title="Name", width=120),
     TableColumn(field="phone_number", title="Phone", width=100),
     TableColumn(field="tenure", title="Tenure", width=60, formatter=StringFormatter()),
-    TableColumn(field="email", title="Email", width=150),
+    TableColumn(field="email", title="Email", width=150)
     # TableColumn(field="salary", title="Income", formatter=NumberFormatter(format="0.000%")),
 ]
 
@@ -252,8 +252,8 @@ customer_directory_source.on_change('selected', lambda attr, old, new: selection
 customer_directory_source.data = {
     'name': customer_directory_df.name,
     'phone_number': customer_directory_df.phone_number,
-    'email': customer_directory_df.email,
-    'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr'
+    'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr',
+    'email': customer_directory_df.email
 }
 
 churn_table_columns = [
