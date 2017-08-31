@@ -240,8 +240,8 @@ def make_default_selection():
 columns = [
     TableColumn(field="name", title="Name", width=120),
     TableColumn(field="phone_number", title="Phone", width=100),
+    TableColumn(field="tenure", title="Tenure", width=60, formatter=StringFormatter()),
     TableColumn(field="email", title="Email", width=150),
-    TableColumn(field="tenure", title="Tenure", width=60, formatter=StringFormatter())
     # TableColumn(field="salary", title="Income", formatter=NumberFormatter(format="0.000%")),
 ]
 
