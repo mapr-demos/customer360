@@ -117,8 +117,6 @@ def customer_directory_filter():
         'email': customer_directory_df.email,
         'tenure': ((customer_directory_df.tenure / 365).astype(int)).astype(str) + 'yr'
     }
-    add_glyphs()
-
 
 # Add headshot to each row of customer_directory_df
 # Load face image files for each customer
@@ -218,17 +216,6 @@ def selection_update(new):
     # lines_source = ColumnDataSource(data=dict(x=x, y=y))
     lines_source.data = dict(x=x, y=y)
 
-    gmapsource.data = dict(
-        desc=current.name.tolist(),
-        lat=current.latitude.tolist(),
-        lon=current.longitude.tolist(),
-        tenure=current.glyphsize.tolist(),
-        size=[10] * current.size,
-        color=current.glyphcolor.tolist(),
-        sentiment=current.sentiment.tolist()
-    )
-    gmapplot.add_glyph(gmapsource, circle)
-
     global pageviews_reset
     pageviews_reset = True
 
@@ -248,17 +235,6 @@ def make_default_selection():
                        '$' + str(500 + np.random.randint(low=0, high=499)) + ',' + str(
                            100 + np.random.randint(low=0, high=899))]
     }
-    gmapsource.data = dict(
-        desc=customer_directory_df.name.head(1000).tolist(),
-        lat=customer_directory_df.latitude.head(1000).tolist(),
-        lon=customer_directory_df.longitude.head(1000).tolist(),
-        tenure=customer_directory_df.glyphsize.head(1000).tolist(),
-        size=customer_directory_df.glyphsize.head(1000).tolist(),
-        color=customer_directory_df.glyphcolor.head(1000).tolist(),
-        sentiment=customer_directory_df.sentiment.head(1000).tolist()
-    )
-    gmapplot.add_glyph(gmapsource, circle)
-
 
 columns = [
     TableColumn(field="name", title="Name", width=120),
@@ -298,73 +274,6 @@ from heatmap import create_heatmap
 
 hm = create_heatmap(customer_directory_df)
 
-##############################################################################
-# define geo map
-##################
-
-from bokeh.models import (
-    GMapPlot, GMapOptions, ColumnDataSource, Circle, LinearColorMapper, DataRange1d
-)
-
-# map_options = GMapOptions(lat=37.6, lng=-119.5, map_type="roadmap", zoom=6)
-map_options = GMapOptions(lat=32, lng=-96, map_type="roadmap", zoom=4)
-
-# For GMaps to function, Google requires you obtain and enable an API key:
-#
-#     https://developers.google.com/maps/documentation/javascript/get-api-key
-#
-# Replace the value below with your personal API key:
-gmapplot = GMapPlot(
-    api_key="AIzaSyBYrbp34OohAHsX1cub8ZeHlMEFajv15fY",
-    x_range=DataRange1d(), y_range=DataRange1d(), map_options=map_options, width=900,
-    toolbar_location="right",
-)
-
-gmapplot.title.text = "Customer Location, Tenure, and Sentiment"
-
-
-# size=(datetime.today() - datetime.strptime('01/13/1999', '%m/%d/%Y')).days
-def add_glyphs():
-    global customer_directory_df
-    max = customer_directory_df['tenure'].loc[customer_directory_df['tenure'].idxmax()]
-    customer_directory_df['glyphsize'] = customer_directory_df['tenure'].apply(lambda x: (10 * x / max))
-    customer_directory_df['glyphcolor'] = pd.Series(customer_directory_df.sentiment, dtype="category")
-    customer_directory_df['glyphcolor'] = customer_directory_df['glyphcolor'].cat.rename_categories(
-        ['red', 'grey', 'blue'])
-
-
-add_glyphs()
-
-# Data to be visualized (equal length arrays)
-gmapsource = ColumnDataSource(
-    data=dict(
-        desc=customer_directory_df.name.tolist(),
-        lat=customer_directory_df.latitude.tolist(),
-        lon=customer_directory_df.longitude.tolist(),
-        size=customer_directory_df.glyphsize.tolist(),
-        tenure=customer_directory_df.glyphsize.tolist(),
-        # size=housing.median_income.tolist(),
-        color=customer_directory_df.glyphcolor.tolist(),
-        sentiment=customer_directory_df.sentiment.tolist()
-    )
-)
-
-color_mapper = LinearColorMapper(palette="Viridis5")
-
-# Circle glyph with relevant properties for plotting
-circle = Circle(x="lon", y="lat", size="size", fill_color="color",
-                fill_alpha=0.5, line_color=None)
-gmapplot.add_glyph(gmapsource, circle)
-
-# Information to be displayed when hovering over glyphs
-gmaphover = HoverTool(
-    tooltips=[
-        ("Name", "@desc"),
-        ("Tenure", "@tenure years"),
-        ("Sentiment", "@sentiment")
-    ]
-)
-gmapplot.add_tools(gmaphover)
 
 ##############################################################################
 # Linear regression plot
@@ -512,7 +421,6 @@ headline_row = [headliner]
 row1 = [title]
 row2 = [column1, column2, column3]
 row3 = [hm]
-row4 = [gmapplot]
 l1 = layout([row1, row2, row3, row4], sizing_mode='fixed')
 l2 = layout([headline_row], sizing_mode='fixed')
 curdoc().add_root(l1)
