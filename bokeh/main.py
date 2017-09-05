@@ -22,19 +22,24 @@ import sys
 # Define Div sections
 ########################################################
 
-headliner = Div(text="""<div class="content"> <h1>Customer 360 powered by MapR&trade;</h1> <p>The <a 
-href="https://mapr.com/products/mapr-converged-data-platform/">MapR Converged Data Platform</a> is uniquely suited to 
-run Customer 360 applications. Operational and analytical workloads can operate together on the same cluster used for 
-cloud scale storage, schema-free data integration, real-time streaming, and machine learning. Those capabilities 
-enable applications to use more information in more ways than has ever been possible before. The application shown 
-below uses those capabiltiies to help customer support representatives quickly determine customer personality, 
-propensity to buy, and likelihood to churn. Check out the <a 
-href="https://mapr.com/solutions/quickstart/customer-360-knowing-your-customer-is-step-one/">Customer 360 Quick Start 
-Solution</a> to learn more about MapR's solutions for Customer 360 applications.</p> <div 
+headliner = Div(text="""<div class="content"><hr>
+<div 
 id="customer360_hype_container" style="margin:auto;position:relative;width:900px;height:400px;overflow:hidden;"> 
 <script type="text/javascript" charset="utf-8" 
-src="bokeh/static/js/customer360.hyperesources/customer360_hype_generated_script.js?34086"></script> </div> </div>""")
-intro = Div(text="""<div class="content"><hr><h1>Customer Intelligence Portal for ACME Bank </h1></div>""")
+src="bokeh/static/js/customer360.hyperesources/customer360_hype_generated_script.js?34086"></script> </div>
+<h1>Customer 360 powered by MapR&trade;</h1> <h3><p>The <a 
+href="https://mapr.com/products/mapr-converged-data-platform/">MapR Converged Data Platform</a> is uniquely suited to 
+run Customer 360 applications.</p> 
+<ul>
+<li>Cloud scale storage</li>
+<li>Schema-free data integration</li>
+<li>Access to real-time streaming data</li>
+<li>Native support for Apache Spark</li>
+</ul>
+<p>Check out the <a 
+href="https://mapr.com/solutions/quickstart/customer-360-knowing-your-customer-is-step-one/">Customer 360 Quick Start 
+Solution</a> to learn more!</p></h3>  </div>""")
+intro = Div(text="""<div class="content"><h1>Call Center Analytics for Retail Banking</h1></div>""")
 customer_directory_title = Div(text="""<h3>Customer Directory:</h3>""")
 ML_column_title = Div(text="""<h3>Machine Learning:</h3>""")
 Persona_column_title = Div(text="""<h3>Selected Customer:</h3>""")
