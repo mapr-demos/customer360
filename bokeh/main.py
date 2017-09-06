@@ -8,7 +8,7 @@ from os import listdir
 from os.path import join, isfile
 from bokeh.layouts import widgetbox, layout
 from bokeh.models import ColumnDataSource, Div, Select, RadioButtonGroup
-from bokeh.models.widgets import DataTable, TableColumn, StringFormatter, TextInput
+from bokeh.models.widgets import DataTable, TableColumn, StringFormatter, TextInput, Button
 import pyodbc
 from bokeh.models import HoverTool
 from datetime import datetime
@@ -78,26 +78,32 @@ customer_directory_df = pd.read_sql(sql, conn)
 logger.debug("records returned: " + str(len(customer_directory_df.index)))
 query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected</div>"
 
-text_input = TextInput(title="Filter by Name:", width=180)
+text_input = TextInput(title="Search String:", value='')
+filter_options = ['name', 'phone_number', 'email']
+filterby = Select(title="Search Field:",
+                width=100,
+                value="name",
+                options=filter_options)
+
 sort_options = ['name', 'phone_number', 'email', 'first_visit']
-sortby = Select(title="Order by:",
-                width=180,
+sortby = Select(title="Order By:",
+                width=100,
                 value="name",
                 options=sort_options)
-controls = [text_input, sortby]
+controls = [text_input, filterby, sortby]
 for control in controls:
-    control.on_change('value', lambda attr, old, new: customer_directory_filter())
+     control.on_change('value', lambda attr, old, new: customer_directory_filter())
 
 
 def customer_directory_filter():
     # sorting by date requires converting the character string in first_visit
     if (sortby.value == 'first_visit'):
-        sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by first_visit_date_type limit 10000"
+        sql = "SELECT _id, name, email, phone_number, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where " + filterby.value +" like '%" + text_input.value.strip() + "%' order by first_visit_date_type limit 10000"
     else:
-        sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where name like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 10000"
+        sql = "SELECT _id, name, email, phone_number, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where " + filterby.value +" like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 10000"
     logger.debug("executing SQL: " + sql)
     global customer_directory_df, headshots, customer_directory_source
-    customer_directory_df = pd.read_sql(sql, conn)
+    customer_directory_df = pd.read_sql(sql, conn).dropna()
     logger.debug("records returned: " + str(len(customer_directory_df.index)))
     query_performance.text = "<div class=\"small\">" + str(len(customer_directory_df.index)) + " rows selected</div>"
 
@@ -347,7 +353,7 @@ plt.add_glyph(lines_source, line)
 #######################################
 from numpy import asarray, cumprod, clip, ones, arange
 from numpy.random import lognormal, rand, choice
-from bokeh.layouts import column, gridplot
+from bokeh.layouts import column, row, gridplot, Spacer
 from bokeh.plotting import curdoc, figure
 from bokeh.models import FuncTickFormatter
 from bokeh.driving import count
@@ -416,7 +422,9 @@ def cont_update():
 ##########################
 
 title = widgetbox(intro, width=700)
-column1 = column(widgetbox(customer_directory_title, text_input, sortby, newline, customer_directory_table, query_performance, width=300))
+spacer = Spacer(width=10)
+row_control = row(filterby, spacer, sortby)
+column1 = column(customer_directory_title, text_input, row_control, newline, customer_directory_table, query_performance, width=300)
 column2 = column(widgetbox(ML_column_title, ML_table, width=300),
                  gridplot([[plt], [pageview_plt]], toolbar_location=None, plot_width=300))
 column3 = widgetbox(Persona_column_title, headshot, selected_name, needs, has, width=300)
