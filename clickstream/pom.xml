@@ -25,7 +25,7 @@
 
         <hbasespark.version>1.1.8-mapr-1703</hbasespark.version>
 
-    </properties>
+    </properties>  
 
     <repositories>
         <repository>
@@ -60,43 +60,107 @@
             <version>${scala.version}</version>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>${hbasespark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-spark</artifactId>
+            <version>${hbasespark.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-streaming_${scala.binary.version}</artifactId>
             <version>${maprspark.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-mllib_${scala.binary.version}</artifactId>
+            <version>${maprspark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-hive_${scala.binary.version}</artifactId>
+            <version>${maprspark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-graphx_${scala.binary.version}</artifactId>
+            <version>${maprspark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-streaming-kafka-0-9_${scala.binary.version}</artifactId>
             <version>${maprspark.version}</version>
         </dependency>
+  
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-streaming-kafka-producer_${scala.binary.version}</artifactId>
+            <version>${maprspark.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.mapr.streams</groupId>
             <artifactId>mapr-streams</artifactId>
             <version>5.2.1-mapr</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.mapr.db</groupId>
+            <artifactId>maprdb-spark</artifactId>
+            <version>5.2.1-mapr</version>
+        </dependency>
+        
     </dependencies>
-
-
+   
+   
     <build>
 
         <plugins>
             <plugin>
-                <groupId>org.scala-tools</groupId>
+                <groupId>org.scala-tools</groupId>						
                 <artifactId>maven-scala-plugin</artifactId>
-                <version>2.11</version>
-                <executions>
-                    <execution>
-                        <goals>
+                <version>2.11</version> 							
+                <executions>									
+                    <execution>									
+                        <goals>										
                             <goal>compile</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+    
         </plugins>
-
+        
 
     </build>
 
 </project>
+
