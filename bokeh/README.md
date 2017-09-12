@@ -70,7 +70,8 @@ mapr dbshell "find /tmp/crm_data --limit 2"
 To make it faster to load and filter the customer directory table, create secondary indexes for the email and phone number fields, like this:
 
 ```
-$ maprcli table index add -path /tmp/crm_data -index idx_email -indexedfields '"email":-1' -includedfields '"name"'
+$ maprcli table index add -path /tmp/crm_data -index idx_name -indexedfields '"name":-1' -includedfields '"name", "phone_number"'
+$ maprcli table index add -path /tmp/crm_data -index idx_phone -indexedfields '"phone_number":-1' -includedfields '"name", "phone_number"'
 
 ```
 
