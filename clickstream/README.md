@@ -11,8 +11,14 @@ Generates a simulated clickstream dataset which is inserted into a MapR Streams 
 
 ### Preliminary - create stream topics
 
+Create a topic in MapR Streams for the clickstream:
+
     $ maprcli stream create -path /tmp/clickstream -produceperm p -consumeperm p -topicperm p
     $ maprcli stream topic create -path /tmp/clickstream -topic weblog
+    
+Run this command to delete that topic later:
+
+    $ maprcli stream delete -path /tmp/clickstream
 
 ### Preliminary - synthesize a larger clickstream dataset (optional)
 
