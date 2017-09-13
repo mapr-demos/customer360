@@ -9,6 +9,7 @@ This utility uses the MapR-DB OJAI connector for Apache Spark, which requires th
 You'll also need to generate a JSON dataset. Log-synth is a good tool to use for that purpose. Here's how to install log-synth:
 
     $ git clone https://github.com/tdunning/log-synth
+    $ cd log-synth 
     $ mvn install -DskipTests
 
 ## How do I compile this project?
@@ -34,5 +35,8 @@ You'll also need to generate a JSON dataset. Log-synth is a good tool to use for
 
 ### Step 4 - Generate a clickstream dataset
 
-    $ cp data/urls.csv log-synth/src/resources/
-    $ java -cp log-synth/target/log-synth-0.1-SNAPSHOT-jar-with-dependencies.jar com.mapr.synth.Synth -count 1M -schema data/clickstream_schema.json -format JSON > clickstream_data.json
+    $ cp data/urls.csv log-synth/src/main/resources/
+    $ cd log-synth
+    $ mvn install -DskipTests
+    $ cd ..
+    $ log-synth/target/log-synth -count 1M -schema data/clickstream_schema.json -format JSON > clickstream_data.json 

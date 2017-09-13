@@ -23,7 +23,12 @@ Run this command to delete that topic later:
 ### Preliminary - synthesize a larger clickstream dataset (optional)
 
 The clickstream dataset provided under data/ is pretty small. You can generate a larger one with the following command. See instructions in `crm_db_generator/README.md`.
-
+    
+    $ git clone https://github.com/tdunning/log-synth
+    $ cp data/urls.csv log-synth/src/main/resources/
+    $ cd log-synth
+    $ mvn install -DskipTests
+    $ cd ..
     $ java -cp log-synth/target/log-synth-0.1-SNAPSHOT-jar-with-dependencies.jar com.mapr.synth.Synth -count 1M -schema data/clickstream_schema.json -format JSON > ./clickstream_data.json
  
 ### Step 1 - Produce the clickstream dataset into a MapR Streams topic 
