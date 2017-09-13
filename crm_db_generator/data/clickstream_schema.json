@@ -1,0 +1,9 @@
+[
+  {"name":"user_id", "class": "foreign-key", "size": 100000},
+  {"name":"datetime", "class":"event", "format": "MM/dd/yyyy HH:mm:ss", "start": "09/13/2017 00:00:00", "rate": "0.05/s"},
+  {"name":"os", "class":"os"},
+  {"name":"browser", "class":"browser"},
+  {"name":"response_time_ms", "class": "int", "min": 500, "max": 10000, "skew": 1},
+  {"name":"product", "class":"string", "dist":{"debit_card":0.1, "personal_credit_card":0.3, "business_credit_card":0.05, "home_mortgage_loan":0.1, "auto_loan":0.05, "brokerage_account":0.1, "roth_ira":0.05, "401k":0.025, "home_insurance":0.1, "automobile_insurance":0.05, "medical_insurance":0.025, "life_insurance":0.05}},
+  {"name":"page_asset", "class":"lookup", "resource":"urls.csv"}
+]
