@@ -29,7 +29,7 @@ The clickstream dataset provided under data/ is pretty small. You can generate a
     $ cd log-synth
     $ mvn install -DskipTests
     $ cd ..
-    $ java -cp log-synth/target/log-synth-0.1-SNAPSHOT-jar-with-dependencies.jar com.mapr.synth.Synth -count 1M -schema data/clickstream_schema.json -format JSON > ./clickstream_data.json
+    $ log-synth/target/log-synth -count 1M -schema data/clickstream_schema.json -format JSON > clickstream_data.json
  
 ### Step 1 - Produce the clickstream dataset into a MapR Streams topic 
 
