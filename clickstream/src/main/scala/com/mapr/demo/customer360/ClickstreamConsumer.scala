@@ -6,7 +6,7 @@ package com.mapr.demo.customer360
   *
   * USAGE:
   *
-  * /opt/mapr/spark/spark-2.1.0/bin/spark-submit --class com.mapr.demo.customer360.ClickstreamConsumer --master local[2] target/mapr-sparkml-streaming-uber-1.0.jar /tmp/clickstream:401k
+  * /opt/mapr/spark/spark-2.1.0/bin/spark-submit --class com.mapr.demo.customer360.ClickstreamConsumer --master local[2] target/mapr-sparkml-streaming-customer360-1.0.jar /tmp/clickstream:weblog
   *
   * AUTHOR:
   * Ian Downard, idownard@mapr.com
@@ -26,25 +26,28 @@ import org.apache.spark.streaming.kafka09.{ ConsumerStrategies, KafkaUtils, Loca
 import org.apache.spark.streaming.kafka.producer._
 
 object ClickstreamConsumer {
-  case class UberC(dt: String, lat: Double, lon: Double, base: String, cluster: String) extends Serializable
+
+    case class Click(user_id: Integer, datetime: String, os: String, browser: String, response_time_ms: String, product: String, url: String) extends Serializable
   def main(args: Array[String]) = {
     if (args.length < 1) {
-      System.err.println("Usage: SparkKafkaConsumer <topic consume> ")
+      System.err.println("Usage: ClickstreamConsumer <stream:topic> ")
       System.exit(1)
     }
-
     val schema = StructType(Array(
-      StructField("dt", TimestampType, true),
-      StructField("lat", DoubleType, true),
-      StructField("lon", DoubleType, true),
-      StructField("base", StringType, true),
-      StructField("cluster", StringType, true)
+      StructField("user_id", IntegerType, true),
+      StructField("datetime", StringType, true),
+      StructField("os", StringType, true),
+      StructField("browser", StringType, true),
+      StructField("response_time_ms", StringType, true),
+      StructField("product", StringType, true),
+      StructField("url", StringType, true)
     ))
-    val groupId = "testgroup"
+
+    val groupId = "clickstream_reader"
     val offsetReset = "earliest"
     val pollTimeout = "5000"
     val Array(topicc) = args
-    val brokers = "maprdemo:9092" // not needed for MapR Streams, needed for Kafka
+    val brokers = "kafkabroker.example.com:9092" // not needed for MapR Streams, needed for Kafka
 
     val sparkConf = new SparkConf()
       .setAppName(ClickstreamConsumer.getClass.getName)
@@ -79,37 +82,19 @@ object ClickstreamConsumer {
         println("count received " + count)
         val spark = SparkSession.builder.config(rdd.sparkContext.getConf).getOrCreate()
         import spark.implicits._
-
         import org.apache.spark.sql.functions._
-        val df: Dataset[UberC] = spark.read.schema(schema).json(rdd).as[UberC]
+        val df: Dataset[Click] = spark.read.schema(schema).json(rdd).as[Click]
         df.show
-        df.createOrReplaceTempView("uber")
-
-        df.groupBy("cluster").count().show()
-
-        spark.sql("select cluster, count(cluster) as count from uber group by cluster").show
-
-        spark.sql("SELECT hour(uber.dt) as hr,count(cluster) as ct FROM uber group By hour(uber.dt)").show
-
-        df.groupBy("cluster").count().show()
-
-        val countsDF = df.groupBy($"cluster", window($"dt", "1 hour")).count()
-        countsDF.createOrReplaceTempView("uber_counts")
-
-        spark.sql("select cluster, sum(count) as total_count from uber_counts group by cluster").show
-        //spark.sql("sql select cluster, date_format(window.end, "MMM-dd HH:mm") as dt, count from uber_counts order by dt, cluster").show
-
-        spark.sql("select cluster, count(cluster) as count from uber group by cluster").show
-
-        spark.sql("SELECT hour(uber.dt) as hr,count(cluster) as ct FROM uber group By hour(uber.dt)").show
+        df.createOrReplaceTempView("weblog_snapshot2")
+        spark.sql("select count(*) from weblog_snapshot2").show
       }
     }
 
     ssc.start()
-    ssc.awaitTermination()
-
+    //ssc.awaitTermination()
     ssc.stop(stopSparkContext = true, stopGracefully = true)
   }
-
 }
+
+
 
