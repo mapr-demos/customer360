@@ -20,11 +20,7 @@
         <!-- version = <spark_version>-mapr-<mapr_eco_version> -->
         <maprspark.version>2.1.0-mapr-1703</maprspark.version>
         <maprstreams.version>0.9.0.0-mapr-1703-streams-5.2.1</maprstreams.version>
-
         <mapr.version>1.1.1-mapr-1602-m7-5.2.0</mapr.version>
-
-        <hbasespark.version>1.1.8-mapr-1703</hbasespark.version>
-
     </properties>  
 
     <repositories>
@@ -59,16 +55,6 @@
             <artifactId>scala-library</artifactId>
             <version>${scala.version}</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-server</artifactId>
-            <version>${hbasespark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-spark</artifactId>
-            <version>${hbasespark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
