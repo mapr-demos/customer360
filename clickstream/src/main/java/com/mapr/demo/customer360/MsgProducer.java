@@ -39,6 +39,11 @@ public class MsgProducer {
         String fileName = "data/clickstream_data.json";
         Integer tput_throttle = Integer.MAX_VALUE;
 
+        if (args.length == 2) {
+            topic = args[0];
+            fileName = args[1];
+        }
+
         if (args.length == 3) {
             topic = args[0];
             fileName = args[1];
