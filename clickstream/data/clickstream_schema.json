@@ -1,6 +1,6 @@
 [
   {"name":"user_id", "class": "foreign-key", "size": 100000},
-  {"name":"datetime", "class":"event", "format": "yyyy-mm-dd hh:mm:ss", "start": "2017-09-01 00:00:00", "rate": "0.05/s"},
+  {"name":"datetime", "class":"event", "format": "yyyy-MM-dd hh:mm:ss", "start": "2017-09-01 00:00:00", "rate": "0.05/s"},
   {"name":"os", "class":"os"},
   {"name":"browser", "class":"browser"},
   {"name":"response_time_ms", "class": "int", "min": 500, "max": 10000, "skew": 1},
