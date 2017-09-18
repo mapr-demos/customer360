@@ -3,11 +3,16 @@ package com.mapr.demo.customer360;
 /** ****************************************************************************
  * PURPOSE:
  *
- * Produce clickstream data to a topic in MapR Streams.
+ * Produce clickstream data to a topic in MapR Streams. Limit streaming data to
+ * user-specified msgs/sec throughput throttle (unlimited if not specified).
  *
  * USAGE:
  *
- * java -cp target/mapr-sparkml-streaming-customer360-1.0.jar:`mapr classpath` com.mapr.demo.customer360.MsgProducer /tmp/clickstream:401k data/cluster.txt
+ * java -cp target/mapr-sparkml-streaming-customer360-1.0.jar:`mapr classpath` com.mapr.demo.customer360.MsgProducer stream:topic input_file [msgs/sec throttle]
+ *
+ * EXAMPLE:
+ *
+ * java -cp target/mapr-sparkml-streaming-customer360-1.0.jar:`mapr classpath` com.mapr.demo.customer360.MProducer /tmp/clickstream:weblog data/clickstream_data.json 5000
  *
  *
  * AUTHOR:
@@ -19,7 +24,6 @@ import java.io.File;
 import java.io.FileReader;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-
 import java.io.IOException;
 import java.util.Properties;
 
@@ -33,34 +37,58 @@ public class MsgProducer {
         // Set the default data source and stream destination.
         String topic = "/tmp/clickstream:401k";
         String fileName = "data/clickstream_data.json";
+        Integer tput_throttle = Integer.MAX_VALUE;
 
-        if (args.length == 2) {
+        if (args.length == 3) {
             topic = args[0];
             fileName = args[1];
-
+            tput_throttle = Integer.parseInt(args[2]);
         }
-        System.out.println("Sending to topic " + topic);
+        System.out.println("Publishing to topic: "+ topic);
         configureProducer();
+        System.out.println("Opening file " + args[1]);
         File f = new File(fileName);
         FileReader fr = new FileReader(f);
         BufferedReader reader = new BufferedReader(fr);
         String line = reader.readLine();
-        while (line != null) {
-  
+        long records_processed = 0L;
+
+        try {
+            long startTime = System.nanoTime();
+            long last_update = 0;
             /* Add each message to a record. A ProducerRecord object
              identifies the topic or specific partition to publish
              a message to. */
-            ProducerRecord<String, String> rec = new ProducerRecord<>(topic,  line);
+            while (line != null) {
+                ProducerRecord<String, String> rec = new ProducerRecord<>(topic, line);
 
-            // Send the record to the producer client library.
-            producer.send(rec);
-            System.out.println("Sent message: " + line);
-            line = reader.readLine();
+                // Send the record to the producer client library.
+                producer.send(rec);
+                records_processed++;
 
+                if (records_processed > tput_throttle) {
+                    while ((Math.floor(System.nanoTime() - startTime) / 1e9) <= last_update) {
+                        Thread.sleep(250); // Sleep for 250ms
+                    }
+                }
+
+                // Print performance stats once per second
+                if ((Math.floor(System.nanoTime() - startTime) / 1e9) > last_update) {
+                    last_update++;
+                    producer.flush();
+                    Monitor.print_status(records_processed, startTime);
+                }
+                //System.out.println("Sent message: " + line);
+                line = reader.readLine();
+            }
+
+        } catch (Throwable throwable) {
+            System.err.printf("%s", throwable.getStackTrace());
+        } finally {
+            producer.close();
+            System.out.println("Published " + records_processed + " messages to stream.");
+            System.out.println("Finished.");
         }
-
-        producer.close();
-        System.out.println("All done.");
 
         System.exit(1);
 
@@ -75,6 +103,7 @@ public class MsgProducer {
                 "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer",
                 "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("auto.create.topics.enable", true);
 
         producer = new KafkaProducer<>(props);
     }
