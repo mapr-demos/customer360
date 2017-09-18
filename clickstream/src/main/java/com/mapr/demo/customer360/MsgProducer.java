@@ -30,9 +30,9 @@ public class MsgProducer {
 
     public static void main(String[] args) throws IOException {
 
-        // Set the default stream and topic to publish to.
+        // Set the default data source and stream destination.
         String topic = "/tmp/clickstream:401k";
-        String fileName = "data/cluster.txt";
+        String fileName = "data/clickstream_data.json";
 
         if (args.length == 2) {
             topic = args[0];
