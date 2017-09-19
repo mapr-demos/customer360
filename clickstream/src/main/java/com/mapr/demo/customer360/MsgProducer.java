@@ -57,6 +57,7 @@ public class MsgProducer {
         BufferedReader reader = new BufferedReader(fr);
         String line = reader.readLine();
         long records_processed = 0L;
+        long records_processed_1s_window = 0L;
 
         try {
             long startTime = System.nanoTime();
@@ -70,8 +71,9 @@ public class MsgProducer {
                 // Send the record to the producer client library.
                 producer.send(rec);
                 records_processed++;
+                records_processed_1s_window++;
 
-                if (records_processed > tput_throttle) {
+                if (records_processed_1s_window > tput_throttle) {
                     while ((Math.floor(System.nanoTime() - startTime) / 1e9) <= last_update) {
                         Thread.sleep(250); // Sleep for 250ms
                     }
@@ -80,6 +82,7 @@ public class MsgProducer {
                 // Print performance stats once per second
                 if ((Math.floor(System.nanoTime() - startTime) / 1e9) > last_update) {
                     last_update++;
+                    records_processed_1s_window = 0L;
                     producer.flush();
                     Monitor.print_status(records_processed, startTime);
                 }
