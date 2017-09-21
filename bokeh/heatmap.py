@@ -4,10 +4,12 @@
 
 import pandas as pd
 from sklearn.datasets import make_classification
-from bokeh.models import ColumnDataSource, FixedTicker
 from bokeh.charts import HeatMap
+from bokeh.models import ColumnDataSource, FixedTicker
 from bokeh.models.widgets import  DataTable, TableColumn
 from bokeh.models import HoverTool
+#from bokeh.palettes import YlOrRd9 as palette
+from bokeh.palettes import Viridis6 as palette
 
 def create_heatmap(df):
 
@@ -59,7 +61,10 @@ def create_heatmap(df):
         score=score
     )
 
-    hm = HeatMap(data, x='product', y='persona', values='score', title='Customer Profiles', xlabel='Product', ylabel='Persona', legend=False, stat=None,  tools=["save"], height=400, width=900, toolbar_location=None)
+    hm = HeatMap(data, x='product', y='persona', values='score',
+        title='Customer Profiles', xlabel='Product', ylabel='Persona',
+        legend=False, stat=None,  tools=["save"], height=350, width=770,
+        toolbar_location=None, palette=palette)
     hm.yaxis.ticker=FixedTicker(ticks=[0,1,2,3])
     hm_source = ColumnDataSource(data=sums)
 

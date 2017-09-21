@@ -3,7 +3,7 @@ from pandas import *
 
 # Initialize the connection
 # The DSN was defined with the iODBC Administrator app for Mac.
-conn = pyodbc.connect("DSN=MapR Drill", autocommit=True)
+conn = pyodbc.connect("DSN=drill64", autocommit=True)
 cursor = conn.cursor()
 
 # Setup a SQL query to select data from a csv file.

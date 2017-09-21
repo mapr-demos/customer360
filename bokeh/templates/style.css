@@ -51,3 +51,35 @@ ul {
 {
     display: inline-block;
 }
+.bk-root .bk-bs-btn-success {
+color: #FDFEFE;
+background-color: #21618C;
+border-color: #21618C;
+font-size: 18px;
+margin: auto;
+text-align: center;
+}
+.bk-root .bk-bs-btn-success:focus {
+color: #FDFEFE;
+background-color: #21618C;
+border-color: #21618C;
+font-size: 18px;
+margin: auto;
+text-align: center;
+}
+.bk-root .bk-bs-btn-success:active {
+color: #FDFEFE;
+background-color: #21618C;
+border-color: #21618C;
+font-size: 18px;
+margin: auto;
+text-align: center;
+}
+.bk-root .bk-bs-btn-success:hover {
+color: #FDFEFE;
+background-color: #5DADE2;
+border-color: #5DADE2;
+font-size: 18px;
+margin: auto;
+text-align: center;
+}
