@@ -65,9 +65,13 @@ logger = logging.getLogger('bokeh')
 logger.setLevel(logging.DEBUG)
 
 conn = pyodbc.connect("DSN=drill64", autocommit=True)
-# Specify unicode options only for MapR 5.2:
-conn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-32le', to=str)
-conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le', to=str)
+# Unicode options for Anaconda python
+conn.setencoding("utf-8")
+conn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-32le')
+conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le')
+# Unicode options for python (not anaconda)
+#conn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-32le', to=str)
+#conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le', to=str)
 
 cursor = conn.cursor()
 
