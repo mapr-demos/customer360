@@ -66,13 +66,13 @@ logger.setLevel(logging.DEBUG)
 
 conn = pyodbc.connect("DSN=drill64", autocommit=True)
 # Specify unicode options only for MapR 5.2:
-# conn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-32le', to=str)
-# conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le', to=str)
+conn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-32le', to=str)
+conn.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-32le', to=str)
 
 cursor = conn.cursor()
 
 sql = "SELECT _id, name, address, email, phone_number, latitude, longitude, first_visit, churn_risk, sentiment " \
-      "FROM `dfs.default`.`./tmp/crm_data` limit 10000"
+      "FROM `dfs.default`.`./apps/crm` limit 10000"
 logger.debug("executing SQL: " + sql)
 customer_directory_df = pd.read_sql(sql, conn)
 logger.debug("records returned: " + str(len(customer_directory_df.index)))
@@ -98,9 +98,9 @@ for control in controls:
 def customer_directory_filter():
     # sorting by date requires converting the character string in first_visit
     if (sortby.value == 'first_visit'):
-        sql = "SELECT _id, name, email, phone_number, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where " + filterby.value +" like '%" + text_input.value.strip() + "%' order by first_visit_date_type limit 10000"
+        sql = "SELECT _id, name, email, phone_number, first_visit, TO_DATE(`first_visit`, 'MM/dd/yyyy') AS first_visit_date_type, churn_risk, sentiment FROM `dfs.default`.`./apps/crm` where " + str(filterby.value) +" like '%" + str(text_input.value.strip()) + "%' order by first_visit_date_type limit 10000"
     else:
-        sql = "SELECT _id, name, email, phone_number, first_visit, churn_risk, sentiment FROM `dfs.default`.`./tmp/crm_data` where " + filterby.value +" like '%" + text_input.value.strip() + "%' order by " + sortby.value + " limit 10000"
+        sql = "SELECT _id, name, email, phone_number, first_visit, churn_risk, sentiment FROM `dfs.default`.`./apps/crm` where " + str(filterby.value) +" like '%" + str(text_input.value.strip()) + "%' order by " + str(sortby.value) + " limit 10000"
     logger.debug("executing SQL: " + sql)
     global customer_directory_df, headshots, customer_directory_source
     customer_directory_df = pd.read_sql(sql, conn).dropna()
@@ -334,7 +334,7 @@ lifetime_value = "{:,}".format(int(lr.predict(days_in_a_lifetime)[0]) * 10)
 # create and render a scatter plot for accumulated purchases
 plt = figure(width=280, height=200, x_axis_type="datetime", title='Spend Rate', toolbar_location=None)
 plt.xaxis.formatter = DatetimeTickFormatter(months=["%b %Y"])
-plt.yaxis.formatter = NumeralTickFormatter(format="‘$0,0’")
+plt.yaxis.formatter = NumeralTickFormatter(format="`$0,0`")
 plt.circle('date', 'accumulated_purchases', source=purchase_history, size=2)
 # plt.line([purchases['Date'].iloc[0] + np.timedelta64(x.min(), 'D'),
 #           purchases['Date'].iloc[0] + np.timedelta64(x.max(), 'D')],
