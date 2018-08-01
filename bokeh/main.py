@@ -227,8 +227,8 @@ def selection_update(new):
 
     y_lr = lr.predict(x[:, np.newaxis])
 
-    x = [purchases['Date'].iloc[0] + np.timedelta64(x.min() - 7, 'D'),
-         purchases['Date'].iloc[0] + np.timedelta64(x.max() + 7, 'D')]
+    x = [purchases['Date'].iloc[0] + np.timedelta64(int(x.min() - 7), 'D'),
+         purchases['Date'].iloc[0] + np.timedelta64(int(x.max() + 7), 'D')]
     y = [y_lr.min(), y_lr.max()]
     # lines_source = ColumnDataSource(data=dict(x=x, y=y))
     lines_source.data = dict(x=x, y=y)
@@ -296,7 +296,6 @@ hm = create_heatmap(customer_directory_df)
 # Linear regression plot
 ################################
 
-import pandas as pd
 import numpy as np
 from bokeh.plotting import *
 from bokeh.models import ColumnDataSource, DatetimeTickFormatter, NumeralTickFormatter, PrintfTickFormatter
@@ -314,8 +313,7 @@ purchases = txndf[txndf['Amount'] < 0]
 purchases = purchases.iloc[::-1]
 # # create a column to count days elapsed since first purchase
 
-purchases['Day'] = purchases['Date'].apply(lambda x: (x - purchases['Date'].iloc[0]) / np.timedelta64(1, 'D')).astype(
-    int)
+purchases['Day'] = purchases['Date'].apply(lambda x: (x - purchases['Date'].iloc[0]) / np.timedelta64(1, 'D')).astype(int)
 
 # # ensure purchase amounts are non-negative
 cleaned_purchases = pd.DataFrame.from_dict(data=dict(day=purchases['Day'],
@@ -345,8 +343,8 @@ plt.circle('date', 'accumulated_purchases', source=purchase_history, size=2)
 #          [y_lr.min(), y_lr.max()], color='red', line_width=2)
 plt.xaxis.major_label_orientation = pi / 4
 
-x = [purchases['Date'].iloc[0] + np.timedelta64(x.min() - 7, 'D'),
-     purchases['Date'].iloc[0] + np.timedelta64(x.max() + 7, 'D')]
+x = [purchases['Date'].iloc[0] + np.timedelta64(int(x.min() - 7), 'D'),
+     purchases['Date'].iloc[0] + np.timedelta64(int(x.max() + 7), 'D')]
 y = [y_lr.min(), y_lr.max()]
 lines_source = ColumnDataSource(data=dict(x=x, y=y))
 line = Line(x='x', y='y', line_color="red", line_width=2, line_alpha=.8)
