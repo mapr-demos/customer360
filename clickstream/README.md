@@ -37,7 +37,7 @@ The clickstream dataset provided under data/ only has 10,000 rows. You can gener
 
 ### Step 2 - Consume the clickstream dataset for analysis in Spark
 
-    $ /opt/mapr/spark/spark-2.1.0/bin/spark-submit --class com.mapr.demo.customer360.ClickstreamConsumer --master local[2] target/mapr-sparkml-streaming-uber-1.0.jar /tmp/clickstream:weblog
+    $ /opt/mapr/spark/spark-*/bin/spark-submit --class com.mapr.demo.customer360.ClickstreamConsumer --master local[2] target/mapr-sparkml-streaming-customer360-1.0-jar-with-dependencies.jar /tmp/clickstream:weblog
 
 You can also manually read messages in the clickstream topic like this:
 
