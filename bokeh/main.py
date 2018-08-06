@@ -41,7 +41,7 @@ href="https://mapr.com/solutions/quickstart/customer-360-knowing-your-customer-i
 Solution</a> to learn more!</p></h3>  </div>""")
 intro = Div(text="""<div class="content"><img src = "bokeh/static/images/topbanner.png" alt="Call Center Analytics for Retail Banking" width="760" height="96"></div>""")
 customer_directory_title = Div(text="""<h3>Customer Directory:</h3>""")
-ML_column_title = Div(text="""<h3>Machine Learning:</h3>""")
+ML_column_title = Div(text="""<h3>Next Best Action:</h3>""")
 Persona_column_title = Div(text="""<h3>Selected Customer:</h3>""")
 
 headshot = Div(text='<img src="bokeh/static/face_images/84b.jpg" alt="face" width="150">')
